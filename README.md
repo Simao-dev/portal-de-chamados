@@ -13,7 +13,7 @@ Pagina Agente
 
 Botão inicial
 
-A pagina agente contara com uma tela login apos ser feito o longin o agente tera acesso a pagina inicial.
+A pagina agente contara com uma tela login apos ser feito o login o agente tera acesso a pagina inicial.
 A pagina inicial contara com um resumo de chamado concluidos.
 Chamados pendentes.
 chamados sem respostas
