@@ -2,19 +2,20 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: #f8f8f8;
     margin: 0;
     padding: 20px;
 }
 .container {
     background: white;
     border: 1px solid #ccc;
+    border-radius: 5px;
     width: 800px;
+    height: 500px;
     margin: 0 auto;
     padding: 15px;
 }
 .menu {
-    width: 150px;
+    width: 250px;
     float: left;
 }
 .menu button {
@@ -29,6 +30,7 @@ body {
     text-align: left;
     font-weight: bold;
     cursor: pointer;
+    border-radius: 5px;
 }
 .menu a {
     text-decoration: none;
@@ -39,79 +41,135 @@ body {
     transform: scale(1.1);
     box-shadow:  1px 1px 0 0 #CED0CE
 }
-.form-area {
-    margin-left: 170px;
-}
-.form-header {
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-.valor {
+.div_select {
     display: flex;
-    gap: 27%;
+    justify-content: flex-start;
+    gap: 15px;
 }
-.input-grupo{
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 10px;
-    
+select,
+::picker(select) {
+  appearance: base-select;
 }
 
-.input-grupo>input.digito { 
-    width: 50px;
+select {
+  border: 2px solid #ddd;
+  background: #eee;
+  padding: 10px;
+  transition: 0.4s;
 }
 
-.input-dados {
+select:hover,
+select:focus {
+  background: #ddd;
+}
+
+select::picker-icon {
+  color: #999;
+  transition: 0.4s rotate;
+}
+
+select:open::picker-icon {
+  rotate: 180deg;
+}
+
+::picker(select) {
+  border: none;
+}
+
+option {
+  display: flex;
+  justify-content: flex-start;
+  gap: 20px;
+  border: 2px solid #ddd;
+  background: #eee;
+  padding: 10px;
+  transition: 0.4s;
+}
+
+option:first-of-type {
+  border-radius: 8px 8px 0 0;
+}
+
+option:last-of-type {
+  border-radius: 0 0 8px 8px;
+}
+
+option:not(option:last-of-type) {
+  border-bottom: none;
+}
+
+option:nth-of-type(odd) {
+  background: #fff;
+}
+
+option:hover,
+option:focus {
+  background: #00b4d8;
+}
+
+
+option:checked {
+  font-weight: bold;
+}
+
+option::checkmark {
+  order: 1;
+  margin-left: auto;
+  content: "☑️";
+}
+
+::picker(select) {
+  opacity: 0;
+  transition: all 0.4s allow-discrete;
+}
+
+::picker(select):popover-open {
+  opacity: 1;
+}
+
+@starting-style {
+  ::picker(select):popover-open {
+    opacity: 0;
+  }
+}
+
+::picker(select) {
+  top: calc(anchor(bottom) + 1px);
+  left: anchor(10%);
+}
+
+.div_descricao {
+    margin-top: 50px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    gap: 15px;
+}
+.div_descricao input {
+     border: 2px solid #ddd;
+    width: 200px;
+    height: 50px;
+    border-radius: 5px;
 }
 
-.input-dados > input {
-    width: 30px;
-} 
-label {
-    margin: 0 5px 0 5px;
+.custom-file-upload {
+     border: 2px solid #ddd;
     display: inline-block;
-
-}
-input {
-    width: 120px;
-    padding: 5px;
+    padding: 6px 12px;
     border-radius: 5px;
-}
-.buttons{
-    display: flex;
-}
-button {
-    border: none;
-    border-radius: 5px;
-    color: #ffffff;
-    background-color: #F15025;
-    width: 70px;
-    height: 30px;
-    margin: 0 5px 0 5px;
-    vertical-align: middle;
     cursor: pointer;
 }
 
-button:hover {
-    transition: 2s;
-    transform: scale(1.1);
-    box-shadow:  1px 1px 0 0 #CED0CE
+#file-upload {
+    display: none;
 }
 
-button i {
-    font-size: 25px;
+#file-name {
+    margin-left: 10px;
 }
-.list-section {
-    margin-top: 20px;
-    background: #F15025;
-    color: white;
-    padding: 5px;
-    font-weight: bold;
-}
-.footer {
-    margin-top: 20px;
-    font-size: 12px;
-    color: #555;
+
+.registrar {
+    margin-top: 10px;
+    border-radius: 5px;
+    height:40px;
+    border: 2px solid #ddd;
 }

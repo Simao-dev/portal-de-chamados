@@ -18,45 +18,53 @@
         </div>
 
         <div class="form-area">
-            <div class="form-header">ETIQUETAS</div>
-            <div class="valor">
-                <p>Informe o Código:</p>
-                <p>Valor</p>
-            </div>
-            <div class="input-grupo">
-                <input type="text">
-                <input class="digito" type="text">
-                <div class="input-dados">
-                    <label>De:</label>
-                    <input type="text">
-                    <label>Por:</label>
-                    <input type="text">
-                    <div class="buttons">
-                        <button><i class="bi bi-arrow-right-short"></i></button>
-                        <button><i class="bi bi-x"></i></button>
-                        <button class="imprimir">Imprimir Lista</button>
-                    </div>
+           <form class="formulario">
+                <div class="div_select">
+                    <select name="Solicitante" required="required">
+                        <option value="">Tipo de chamado</option>
+                        <option value="">Requisição</option>
+                        <option value="usuarios">Rotina do setor</option>
+                        <option value="usuarios">Incidente</option>
+                    </select>
+                    <select name="Solicitante" required="required">
+                        <option value="">Solicitante</option>
+                        <option value="usuarios">Cleres Gerencia</option>
+                        <option value="usuarios">Valdeny</option>
+                        <option value="Thayonara">Thayonara</option>
+                    </select>
+                    <select name="Solicitante" required="required">
+                        <option value="">Status</option>
+                        <option value="usuarios">Concuído</option>
+                        <option value="usuarios">Pendente</option>
+                    </select>
                 </div>
+                <div class="div_descricao">
+                    <input type="text" placeholder="Descrição do chamado" name="descricao" id="descricao">
+                    <input type="text" name="upload" id="upload" placeholder="Informação extra">
+                    <label for="file-upload" class="custom-file-upload">
+                <input id="file-upload" type="file" onchange="updateFileName()" style="display: none;" />
+                    Escolher Arquivo
+                </label>
 
-            </div>
+                <span id="file-name"></span>
 
-            <div class="input-Descicao">
-                <label>DES:</label>
-                <input type="text">
-                <label>EMB:</label>
-                <input type="text">
-                <button><i class="bi bi-trash2"></i></button>
-                <button><i class="bi bi-printer"></i></button>
-            </div>
-            <div class="list-section">
-                LISTA
-            </div>
+                <script>
+                    function updateFileName() {
+                        const fileInput = document.getElementById('file-upload');
+                        const fileNameSpan = document.getElementById('file-name');
+                    if (fileInput.files.length > 0) {
+                        fileNameSpan.textContent = fileInput.files[0].name;
+                    } else {
+                        fileNameSpan.textContent = '';
+                    }
+                }
+                </script>
 
-            <div style="border: 1px solid #ccc; height: 200px; background: white;"></div>
+                </div>
+                <button type="submit" class="registrar">Registrar</button>
+            </form>
 
-            <div class="footer">
-                DESENVOLVIDO POR CPD JNORTE - CE v1.1
-            </div>
+            
         </div>
     </div>   
 </body>
