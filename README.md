@@ -38,3 +38,7 @@ e outras metricas ainda por definir
 Botão chamados via telefone
 
 Botão destinado a chamados aberto via telefone, esse botão servirá para que o agente possa registrar os chamados feito via telefone
+
+Botão cria novo usuário
+
+Destinado a criar novos usuários
