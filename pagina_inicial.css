@@ -151,7 +151,7 @@ option::checkmark {
     border-radius: 5px;
 }
 
-.custom-file-upload {
+.custom-fileUpload {
      border: 2px solid #ddd;
     display: inline-block;
     padding: 6px 12px;
@@ -159,7 +159,7 @@ option::checkmark {
     cursor: pointer;
 }
 
-#file-upload {
+#fileUpload {
     display: none;
 }
 

@@ -22,27 +22,27 @@
                 <div class="div_select">
                     <select name="Solicitante" required="required">
                         <option value="">Tipo de chamado</option>
-                        <option value="">Requisição</option>
-                        <option value="usuarios">Rotina do setor</option>
-                        <option value="usuarios">Incidente</option>
+                        <option value="" id="requisicao">Requisição</option>
+                        <option value="usuarios" id="rotinaDoSetor">Rotina do setor</option>
+                        <option value="usuarios" id="incidente">Incidente</option>
                     </select>
                     <select name="Solicitante" required="required">
                         <option value="">Solicitante</option>
-                        <option value="usuarios">Cleres Gerencia</option>
+                        <option value="usuarios" id="solicitante">Cleres Gerencia</option>
                         <option value="usuarios">Valdeny</option>
                         <option value="Thayonara">Thayonara</option>
                     </select>
-                    <select name="Solicitante" required="required">
+                    <select name="Status" required="required">
                         <option value="">Status</option>
-                        <option value="usuarios">Concuído</option>
+                        <option value="usuarios" id="statusChamado">Concuído</option>
                         <option value="usuarios">Pendente</option>
                     </select>
                 </div>
                 <div class="div_descricao">
                     <input type="text" placeholder="Descrição do chamado" name="descricao" id="descricao">
-                    <input type="text" name="upload" id="upload" placeholder="Informação extra">
+                    <input type="text" name="upload" id="informacaoExtra" placeholder="Informação extra">
                     <label for="file-upload" class="custom-file-upload">
-                <input id="file-upload" type="file" onchange="updateFileName()" style="display: none;" />
+                <input id="fileUpload" type="file" onchange="updateFileName()" style="display: none;" />
                     Escolher Arquivo
                 </label>
 
