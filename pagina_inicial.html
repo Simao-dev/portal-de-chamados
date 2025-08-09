@@ -1,71 +1,142 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chamados</title>
-    <link rel="stylesheet" href="pagina_inicial.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-</head>
-<body>
-  <div class="container">
-        <div class="menu">
-            <a href="index.html"><button>CHAMADOS</button></a>
-            <a href="preco.html"><button>PESQUISA</button></a>
-            <a href=""><button>METRICAS</button></a>
-            <a href=""><button>CHAMADOS VIA TELEFONE</button></a>
-            <a href=""><button>CRIA USUARIO</button></a>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- DataTables JS e CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css"
+    />
+    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
+    <link rel="stylesheet" href="pagina_inicial.css" />
+    <!--<?!= include("styleForm") ?> tag que puxa outros arquivos no apps script-->
+    <!--<?!= include("javaScript") ?> tag que puxa outros arquivos no apps script-->
+  </head>
+  <body>
+    <div class="container">
+      <div class="menu">
+        <a href="index.html"><button>CHAMADOS</button></a>
+        <a href="preco.html"><button>PESQUISA</button></a>
+        <a href="#"><button>MÉTRICAS</button></a>
+        <a href="#"><button>CHAMADOS VIA TELEFONE</button></a>
+        <a href="#"><button>CRIAR USUÁRIO</button></a>
+      </div>
+
+      <div class="form-area">
+        <form class="formulario">
+          <div class="div_select">
+            <div class="idchamado">
+              <label for="idDoChamado">ID</label><br />
+              <input type="text" id="idDoChamado" disabled />
+            </div>
+
+            <select name="tipoDoChamado" id="tipoDoChamado" class="butons-top" required>
+              <option>Tipo de chamado</option>
+              <option>Requisição</option>
+              <option>Rotina do setor</option>
+              <option>Incidente</option>
+            </select>
+
+            <select name="solicitante" id="solicitante"  class="butons-top" required>
+              <option>Solicitante</option>
+              <option>Cleres Gerência</option>
+              <option>Valdeny</option>
+              <option>Thayonara</option>
+            </select>
+
+            <select name="statusChamado" id="statusChamado" class="butons-top" required>
+              <option value="">Status</option>
+              <option>Concluído</option>
+              <option>Pendente</option>
+            </select>
+          </div>
+
+          <div class="div_descricao">
+            <input
+              type="text"
+              placeholder="Descrição do chamado"
+              name="descricao"
+              id="descricao"
+            />
+            <input
+              type="text"
+              name="upload"
+              id="informacaoExtra"
+              placeholder="Informação extra"
+            />
+            <label for="fileUpload" class="custom-file-upload">
+              <input
+                id="fileUpload"
+                type="file"
+                onchange="updateFileName()"
+                style="display: none"
+              />
+              <P>Escolher Arquivo</P>
+            </label>
+            <span id="file-name"></span>
+          </div>
+
+          <button type="button" onclick="enviaAoClicar()" class="butons-bot">
+            Registrar
+          </button>
+
+          <button type="button" onclick="lerDadosDaTabela()" class="butons-bot">Atualizar</button>
+        </form>
+        <div class="divatabela">
+          <table id="tabela" class="display">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tipo do Chamado</th>
+                <th>Solicitante</th>
+                <th>Status Chamado</th>
+                <th>Descrição</th>
+                <th>informação Extra</th>
+                <th>Hora</th>
+                <th>Data</th>
+              </tr>
+
+              <tr>
+                <td>1</td>
+                <td>Requisição</td>
+                <td>Cleres Gerência</td>
+                <td>Concluído</td>
+                <td>TESTE DE DADOS</td>
+                <td>TESTE</td>
+                <td>14:29:55</td>
+                <td>09/08/2025</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Rotina do setor</td>
+                <td>Valdeny</td>
+                <td>Pendente</td>
+                <td>TESTE </td>
+                <td>TESTE</td>
+                <td>14:34:08</td>
+                <td>09/08/2025</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Requisição</td>
+                <td>Cleres Gerência</td>
+                <td>Pendente</td>
+                <td>testado input de data e hora</td>
+                <td>testado</td>
+                <td>14:53:05</td>
+                <td>09/08/2025</td>
+              </tr>
+            </thead>
+          </table>
         </div>
-
-        <div class="form-area">
-           <form class="formulario">
-                <div class="div_select">
-                    <select name="Solicitante" required="required">
-                        <option value="">Tipo de chamado</option>
-                        <option value="" id="requisicao">Requisição</option>
-                        <option value="usuarios" id="rotinaDoSetor">Rotina do setor</option>
-                        <option value="usuarios" id="incidente">Incidente</option>
-                    </select>
-                    <select name="Solicitante" required="required">
-                        <option value="">Solicitante</option>
-                        <option value="usuarios" id="solicitante">Cleres Gerencia</option>
-                        <option value="usuarios">Valdeny</option>
-                        <option value="Thayonara">Thayonara</option>
-                    </select>
-                    <select name="Status" required="required">
-                        <option value="">Status</option>
-                        <option value="usuarios" id="statusChamado">Concuído</option>
-                        <option value="usuarios">Pendente</option>
-                    </select>
-                </div>
-                <div class="div_descricao">
-                    <input type="text" placeholder="Descrição do chamado" name="descricao" id="descricao">
-                    <input type="text" name="upload" id="informacaoExtra" placeholder="Informação extra">
-                    <label for="file-upload" class="custom-file-upload">
-                <input id="fileUpload" type="file" onchange="updateFileName()" style="display: none;" />
-                    Escolher Arquivo
-                </label>
-
-                <span id="file-name"></span>
-
-                <script>
-                    function updateFileName() {
-                        const fileInput = document.getElementById('file-upload');
-                        const fileNameSpan = document.getElementById('file-name');
-                    if (fileInput.files.length > 0) {
-                        fileNameSpan.textContent = fileInput.files[0].name;
-                    } else {
-                        fileNameSpan.textContent = '';
-                    }
-                }
-                </script>
-
-                </div>
-                <button type="submit" class="registrar">Registrar</button>
-            </form>
-
-            
-        </div>
-    </div>   
-</body>
+      </div>
+    </div>
+  </body>
 </html>
