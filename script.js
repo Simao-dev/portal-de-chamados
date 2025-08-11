@@ -8,11 +8,11 @@ function updateFileName() {
   }
 }
 
-function updateFileName() {
+/*function updateFileName() {
   const input = document.getElementById("fileUpload");
   const fileName = input.files.length > 0 ? input.files[0].name : "";
   document.getElementById("file-name").textContent = fileName;
-}
+}*/
 
 //NAVEGAÇÃO ENTRE MENUS
 //MUDA A PROPRIEDADE DO DISPLAY DA DIV ENTRE DISPLAY NONE E DISPLAY BLOCK
