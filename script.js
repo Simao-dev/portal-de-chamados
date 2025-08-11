@@ -7,6 +7,9 @@ function updateFileName() {
     fileNameSpan.textContent = "";
   }
 }
+//NAVEGAÇÃO ENTRE MENUS
+//MUDA A PROPRIEDADE DO DISPLAY DA DIV (menuCadastro) PARA DISPLAY BLOCK
+
 
 function updateFileName() {
   const input = document.getElementById("fileUpload");

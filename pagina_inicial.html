@@ -14,127 +14,138 @@
       rel="stylesheet"
       href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css"
     />
+    <script src="script.js"></script>
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
     <link rel="stylesheet" href="pagina_inicial.css" />
     <!--<?!= include("styleForm") ?> tag que puxa outros arquivos no apps script-->
     <!--<?!= include("javaScript") ?> tag que puxa outros arquivos no apps script-->
   </head>
   <body>
-    <div class="container">
-      <div class="menu">
-        <a href="index.html"><button>CHAMADOS</button></a>
-        <a href="preco.html"><button>PESQUISA</button></a>
-        <a href="#"><button>MÉTRICAS</button></a>
-        <a href="#"><button>CHAMADOS VIA TELEFONE</button></a>
-        <a href="#"><button>CRIAR USUÁRIO</button></a>
-      </div>
-
-      <div class="form-area">
-        <form class="formulario">
-          <div class="div_select">
-            <div class="idchamado">
-              <label for="idDoChamado">ID</label><br />
-              <input type="text" id="idDoChamado" disabled />
+    <div class="main-login">
+      <div class="container">
+        <div class="menu">
+          <button class="menu-navegação" data-alvo="chamados">CHAMADOS</button>
+          <button class="menu-navegação" data-alvo="pesquisa" >PESQUISA</button>
+          <button class="menu-navegação" data-alvo="metricas">MÉTRICAS</button>
+          <button class="menu-navegação" data-alvo="telefone">CHAMADOS VIA TELEFONE</button>
+          <button class="menu-navegação" data-alvo="usuarios">CRIAR USUÁRIO</button>
+        </div>
+        <div class="form-area" id="menuChamados">
+          <p>Chamados</p>
+        </div>
+        <!-- MENU PESQUISA -->
+        <div class="form-area" id="menuPesquisa">
+          <P>Pesquisa</P>
+        </div>
+        <!--MENU METRICAS-->
+        <div class="form-area" id="menuMetricas">
+          <p>Metricas</p>
+        </div>
+        <!--MENU CHAMADOS VIA TELEFONE-->
+        <div class="form-area" id="menuChamados">
+          <form class="formulario">
+            <div class="div_select">
+              <div class="idchamado">
+                <label for="idDoChamado">ID</label><br />
+                <input type="text" id="idDoChamado" disabled />
+              </div>
+              <select name="tipoDoChamado" id="tipoDoChamado" class="butons-top" required>
+                <option>Tipo de chamado</option>
+                <option>Requisição</option>
+                <option>Rotina do setor</option>
+                <option>Incidente</option>
+              </select>
+              <select name="solicitante" id="solicitante"  class="butons-top" required>
+                <option>Solicitante</option>
+                <option>Cleres Gerência</option>
+                <option>Valdeny</option>
+                <option>Thayonara</option>
+              </select>
+              <select name="statusChamado" id="statusChamado" class="butons-top" required>
+                <option value="">Status</option>
+                <option>Concluído</option>
+                <option>Pendente</option>
+              </select>
             </div>
-
-            <select name="tipoDoChamado" id="tipoDoChamado" class="butons-top" required>
-              <option>Tipo de chamado</option>
-              <option>Requisição</option>
-              <option>Rotina do setor</option>
-              <option>Incidente</option>
-            </select>
-
-            <select name="solicitante" id="solicitante"  class="butons-top" required>
-              <option>Solicitante</option>
-              <option>Cleres Gerência</option>
-              <option>Valdeny</option>
-              <option>Thayonara</option>
-            </select>
-
-            <select name="statusChamado" id="statusChamado" class="butons-top" required>
-              <option value="">Status</option>
-              <option>Concluído</option>
-              <option>Pendente</option>
-            </select>
-          </div>
-
-          <div class="div_descricao">
-            <input
-              type="text"
-              placeholder="Descrição do chamado"
-              name="descricao"
-              id="descricao"
-            />
-            <input
-              type="text"
-              name="upload"
-              id="informacaoExtra"
-              placeholder="Informação extra"
-            />
-            <label for="fileUpload" class="custom-file-upload">
+            <div class="div_descricao">
               <input
-                id="fileUpload"
-                type="file"
-                onchange="updateFileName()"
-                style="display: none"
+                type="text"
+                placeholder="Descrição do chamado"
+                name="descricao"
+                id="descricao"
               />
-              <P>Escolher Arquivo</P>
-            </label>
-            <span id="file-name"></span>
+              <input
+                type="text"
+                name="upload"
+                id="informacaoExtra"
+                placeholder="Informação extra"
+              />
+              <label for="fileUpload" class="custom-file-upload">
+                <input
+                  id="fileUpload"
+                  type="file"
+                  onchange="updateFileName()"
+                  style="display: none"
+                />
+                <P>Escolher Arquivo</P>
+              </label>
+              <span id="file-name"></span>
+            </div>
+            <button type="button" onclick="enviaAoClicar()" class="butons-bot">
+              Registrar
+            </button>
+            <button type="button" onclick="lerDadosDaTabela()" class="butons-bot">Atualizar</button>
+          </form>
+          <div class="divatabela">
+            <table id="tabela" class="display">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tipo do Chamado</th>
+                  <th>Solicitante</th>
+                  <th>Status Chamado</th>
+                  <th>Descrição</th>
+                  <th>informação Extra</th>
+                  <th>Hora</th>
+                  <th>Data</th>
+                </tr>
+                <tr>
+                  <td>1</td>
+                  <td>Requisição</td>
+                  <td>Cleres Gerência</td>
+                  <td>Concluído</td>
+                  <td>TESTE DE DADOS</td>
+                  <td>TESTE</td>
+                  <td>14:29:55</td>
+                  <td>09/08/2025</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>Rotina do setor</td>
+                  <td>Valdeny</td>
+                  <td>Pendente</td>
+                  <td>TESTE </td>
+                  <td>TESTE</td>
+                  <td>14:34:08</td>
+                  <td>09/08/2025</td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td>Requisição</td>
+                  <td>Cleres Gerência</td>
+                  <td>Pendente</td>
+                  <td>testado input de data e hora</td>
+                  <td>testado</td>
+                  <td>14:53:05</td>
+                  <td>09/08/2025</td>
+                </tr>
+              </thead>
+            </table>
           </div>
-
-          <button type="button" onclick="enviaAoClicar()" class="butons-bot">
-            Registrar
-          </button>
-
-          <button type="button" onclick="lerDadosDaTabela()" class="butons-bot">Atualizar</button>
-        </form>
-        <div class="divatabela">
-          <table id="tabela" class="display">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Tipo do Chamado</th>
-                <th>Solicitante</th>
-                <th>Status Chamado</th>
-                <th>Descrição</th>
-                <th>informação Extra</th>
-                <th>Hora</th>
-                <th>Data</th>
-              </tr>
-
-              <tr>
-                <td>1</td>
-                <td>Requisição</td>
-                <td>Cleres Gerência</td>
-                <td>Concluído</td>
-                <td>TESTE DE DADOS</td>
-                <td>TESTE</td>
-                <td>14:29:55</td>
-                <td>09/08/2025</td>
-              </tr>
-              <tr>
-                <td>2</td>
-                <td>Rotina do setor</td>
-                <td>Valdeny</td>
-                <td>Pendente</td>
-                <td>TESTE </td>
-                <td>TESTE</td>
-                <td>14:34:08</td>
-                <td>09/08/2025</td>
-              </tr>
-              <tr>
-                <td>3</td>
-                <td>Requisição</td>
-                <td>Cleres Gerência</td>
-                <td>Pendente</td>
-                <td>testado input de data e hora</td>
-                <td>testado</td>
-                <td>14:53:05</td>
-                <td>09/08/2025</td>
-              </tr>
-            </thead>
-          </table>
+        </div>
+        <!--MENU DE CADASTRO DE USUÁRIOS-->
+        <div class="form-area" id="menuCasdatro">
+          <p>teste cadastro de usuarios</p>
         </div>
       </div>
     </div>

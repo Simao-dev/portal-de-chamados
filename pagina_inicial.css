@@ -15,7 +15,7 @@ body {
   padding: 15px;
 }
 .menu {
-  width: 250px;
+  width: 180px;
   float: left;
 }
 .menu button {
@@ -36,9 +36,11 @@ body {
   transform: scale(1.1);
   box-shadow: 1px 1px 0 0 #ced0ce;
 }
-.menu a {
-  text-decoration: none;
+
+.form-area {
+  display: none;
 }
+
 .butons-top{
   border-radius: 5px;
   border: 2px solid #ddd;
