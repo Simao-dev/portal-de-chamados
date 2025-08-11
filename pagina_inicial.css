@@ -36,9 +36,13 @@ body {
   transform: scale(1.1);
   box-shadow: 1px 1px 0 0 #ced0ce;
 }
-
+/* oculta todos os menus*/
 .form-area {
   display: none;
+}
+
+.conteudo-ativo {
+  display: block;
 }
 
 .butons-top{

@@ -7,15 +7,46 @@ function updateFileName() {
     fileNameSpan.textContent = "";
   }
 }
-//NAVEGAÇÃO ENTRE MENUS
-//MUDA A PROPRIEDADE DO DISPLAY DA DIV (menuCadastro) PARA DISPLAY BLOCK
-
 
 function updateFileName() {
   const input = document.getElementById("fileUpload");
   const fileName = input.files.length > 0 ? input.files[0].name : "";
   document.getElementById("file-name").textContent = fileName;
 }
+
+//NAVEGAÇÃO ENTRE MENUS
+//MUDA A PROPRIEDADE DO DISPLAY DA DIV ENTRE DISPLAY NONE E DISPLAY BLOCK
+
+// Seleciona todos os botões com a classe 'menu-navegação'
+const botoes = document.querySelectorAll(".menu-navegação");
+
+// Seleciona todos os conteúdos com a classe 'form-area'
+const telasFuncoes = document.querySelectorAll(".form-area");
+
+// Adiciona um 'ouvinte de evento' de clique a cada botão
+botoes.forEach(botao => {
+  botao.addEventListener("click", () => {
+    // Primeiro, ocultamos todos os conteúdos removendo a classe
+    telasFuncoes.forEach(conteudo => {
+      conteudo.classList.remove("conteudo-ativo");
+    });
+
+    // Em seguida, pegamos o valor do atributo 'data-alvo' do botão clicado
+    const alvo = botao.dataset.alvo;
+
+    // Encontramos o elemento com o ID correspondente
+    const conteudoParaMostrar = document.getElementById(alvo);
+
+    // E adicionamos a classe para mostrá-lo (verificando se o elemento existe)
+    if (conteudoParaMostrar) {
+      conteudoParaMostrar.classList.add("conteudo-ativo");
+    }
+  });
+});
+
+// Opcional: Para mostrar o primeiro menu ao carregar a página
+document.getElementById('telefone').classList.add('conteudo-ativo');
+
 
 function enviaAoClicar() {
   const dados = {
