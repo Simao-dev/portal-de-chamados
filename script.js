@@ -45,7 +45,7 @@ botoes.forEach(botao => {
 });
 
 // Opcional: Para mostrar o primeiro menu ao carregar a página
-document.getElementById('telefone').classList.add('conteudo-ativo');
+document.getElementById('cadastro').classList.add('conteudo-ativo');
 
 
 function enviaAoClicar() {
