@@ -183,3 +183,13 @@ td:not(:first-child):hover {
   border-radius: 5px;
   font-size: 18px;
 }
+
+img {
+  width: 50%;
+  padding: 0 0 0 20%;
+
+}
+
+.tipo {
+  text-align: center;
+}
