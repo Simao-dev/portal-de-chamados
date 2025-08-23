@@ -1,25 +1,168 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <title>Login</title>
-</head>
-<body>
-    <div class="login-container">
-    <h2>Login</h2>
-    <form>
-      <label for="usuario">Usuário</label>
-      <input type="text" id="usuario" name="usuario" required />
-
-      <label for="senha">Senha</label>
-      <input type="password" id="senha" name="senha" required />
-
-      <button type="submit">Entrar</button>
-
-      <a href="#" class="forgot-password">Esqueci a senha</a>
-    </form>
-  </div>    
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chamados</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- DataTables JS e CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css"
+    />
+    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
+    <link rel="stylesheet" href="styleForm.css" />
+    <!--<?!= include("styleForm") ?> tag que puxa outros arquivos no apps script-->
+    <!--<?!= include("javaScript") ?> tag que puxa outros arquivos no apps script-->
+  </head>
+  <body>
+    <div class="main-login">
+      <div class="container">
+        <div class="menu">
+          <button class="menu-navegação" data-alvo="chamados">CHAMADOS</button>
+          <button class="menu-navegação" data-alvo="pesquisa" >PESQUISA</button>
+          <button class="menu-navegação" data-alvo="metricas">MÉTRICAS</button>
+          <button class="menu-navegação" data-alvo="telefone">CHAMADOS VIA TELEFONE</button>
+          <button class="menu-navegação" data-alvo="cadastro">CRIAR USUÁRIO</button>
+        </div>
+        <div class="funcoes">
+          <div class="form-area" id="chamados">
+            <h3 class="tipo">Chamados</h3>
+            <img src="https://images.tcdn.com.br/img/img_prod/1040648/placa_sinalizacao_de_obras_homens_trabalhando_717_1_52eacb734bc062343ef2acebc3f7c387.jpg" alt="">
+          </div>
+          <!-- MENU PESQUISA -->
+          <div class="form-area" id="pesquisa">
+            <h3 class="tipo">Pesquisa</h3>
+            <img src="https://images.tcdn.com.br/img/img_prod/1040648/placa_sinalizacao_de_obras_homens_trabalhando_717_1_52eacb734bc062343ef2acebc3f7c387.jpg" alt="">
+          </div>
+          <!--MENU METRICAS-->
+          <div class="form-area" id="metricas">
+            <h3 class="tipo">Metricas</h3>
+            <img src="https://images.tcdn.com.br/img/img_prod/1040648/placa_sinalizacao_de_obras_homens_trabalhando_717_1_52eacb734bc062343ef2acebc3f7c387.jpg" alt="">
+          </div>
+          <!--MENU CHAMADOS VIA TELEFONE-->
+          <div class="form-area" id="telefone">
+            <div class="boas-vindas">
+              <h2>Cadasto de usuários</h2>
+              <h3> Olá Pedro Simão</h3>
+            </div>
+            <form class="formulario">
+              <div class="div_select">
+                
+                <div class="idchamado">
+                  <label for="idDoChamado">ID</label><br />
+                  <input type="text" id="idDoChamado" disabled />
+                </div>
+                <select name="tipoDoChamado" id="tipoDoChamado" class="butons-top" required>
+                  <option>Tipo de chamado</option>
+                  <option>Requisição</option>
+                  <option>Rotina do setor</option>
+                  <option>Incidente</option>
+                </select>
+                <select name="solicitante" id="solicitante"  class="butons-top" required>
+                  <option>Solicitante</option>
+                  <option>Cleres Gerência</option>
+                  <option>Valdeny</option>
+                  <option>Thayonara</option>
+                </select>
+                <select name="statusChamado" id="statusChamado" class="butons-top" required>
+                  <option value="">Status</option>
+                  <option>Concluído</option>
+                  <option>Pendente</option>
+                </select>
+              </div>
+              <div class="div_descricao">
+                <input
+                  type="text"
+                  placeholder="Descrição do chamado"
+                  name="descricao"
+                  id="descricao"
+                />
+                <input
+                  type="text"
+                  name="upload"
+                  id="informacaoExtra"
+                  placeholder="Informação extra"
+                />
+                <label for="fileUpload" class="custom-file-upload">
+                  <input
+                    id="fileUpload"
+                    type="file"
+                    onchange="updateFileName()"
+                    style="display: none"
+                  />
+                  <P>Escolher Arquivo</P>
+                </label>
+                <span id="file-name"></span>
+              </div>
+              <button type="button" onclick="enviaAoClicar()" class="butons-bot">
+                Registrar
+              </button>
+              <button type="button" onclick="lerDadosDaTabela()" class="butons-bot">Atualizar</button>
+            </form>
+            <div class="divatabela">
+              <table id="tabela" class="display">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+          </div>
+          <!--MENU DE CADASTRO DE USUÁRIOS-->
+          <div class="form-area" id="cadastro">
+            <div class="boas-vindas">
+              <h2>Cadasto de usuários</h2>
+              <h3> Olá Pedro Simão</h3>
+            </div>
+              <div class="div_cadastro">
+                <input
+                  type="text"
+                  placeholder=" Nome Sobrenome"
+                  name="descricao"
+                  id="nome"
+                />
+                <input
+                  type="text"
+                  placeholder=" Cargo/função"
+                  name="descricao"
+                  id="cargo"
+                />
+                <input
+                  type="password"
+                  name="upload"
+                  id="senha"
+                  placeholder=" Senha"
+                />
+                <input
+                  type="password"
+                  name="upload"
+                  id=""
+                  placeholder=" Confime senha"
+                  
+                />
+              </div>
+              <div>
+                <button type="button" onclick="" class="butons-bot">Criar
+                </button>
+                <button type="button" onclick="" class="butons-bot">Atualizar</button>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="javaScript.js"></script>
+  </body>
 </html>
