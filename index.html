@@ -15,40 +15,36 @@
       href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css"
     />
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
+      
     <link rel="stylesheet" href="styleForm.css" />
     <!--<?!= include("styleForm") ?> tag que puxa outros arquivos no apps script-->
     <!--<?!= include("javaScript") ?> tag que puxa outros arquivos no apps script-->
   </head>
   <body>
-    <div class="main-login">
       <div class="container">
         <div class="menu">
-          <button class="menu-navegação" data-alvo="chamados">CHAMADOS</button>
-          <button class="menu-navegação" data-alvo="pesquisa" >PESQUISA</button>
-          <button class="menu-navegação" data-alvo="metricas">MÉTRICAS</button>
-          <button class="menu-navegação" data-alvo="telefone">CHAMADOS VIA TELEFONE</button>
-          <button class="menu-navegação" data-alvo="cadastro">CRIAR USUÁRIO</button>
+          <button class="menu-navegação" data-alvo="chamados"><i class="bi bi-clipboard-check-fill"></i>Chamados</button>
+          <button class="menu-navegação" data-alvo="pesquisa" ><i class="bi bi-search"></i>Pesquisar</button>
+          <button class="menu-navegação" data-alvo="metricas"><i class="bi bi-bar-chart-fill"></i>Metricas</button>
+          <button class="menu-navegação" data-alvo="telefone"><i class="bi bi-telephone-minus-fill"></i>Chamados via telefone</button>
+          <button class="menu-navegação" data-alvo="cadastro"><i class="bi bi-person-fill"></i>Criar usario</button>
         </div>
         <div class="funcoes">
           <div class="form-area" id="chamados">
             <h3 class="tipo">Chamados</h3>
-            <img src="https://images.tcdn.com.br/img/img_prod/1040648/placa_sinalizacao_de_obras_homens_trabalhando_717_1_52eacb734bc062343ef2acebc3f7c387.jpg" alt="">
           </div>
           <!-- MENU PESQUISA -->
           <div class="form-area" id="pesquisa">
             <h3 class="tipo">Pesquisa</h3>
-            <img src="https://images.tcdn.com.br/img/img_prod/1040648/placa_sinalizacao_de_obras_homens_trabalhando_717_1_52eacb734bc062343ef2acebc3f7c387.jpg" alt="">
           </div>
           <!--MENU METRICAS-->
           <div class="form-area" id="metricas">
             <h3 class="tipo">Metricas</h3>
-            <img src="https://images.tcdn.com.br/img/img_prod/1040648/placa_sinalizacao_de_obras_homens_trabalhando_717_1_52eacb734bc062343ef2acebc3f7c387.jpg" alt="">
           </div>
           <!--MENU CHAMADOS VIA TELEFONE-->
           <div class="form-area" id="telefone">
             <div class="boas-vindas">
               <h2>Cadasto de usuários</h2>
-              <h3> Olá Pedro Simão</h3>
             </div>
             <form class="formulario">
               <div class="div_select">
@@ -88,34 +84,36 @@
                   id="informacaoExtra"
                   placeholder="Informação extra"
                 />
-                <label for="fileUpload" class="custom-file-upload">
-                  <input
-                    id="fileUpload"
-                    type="file"
-                    onchange="updateFileName()"
-                    style="display: none"
-                  />
-                  <P>Escolher Arquivo</P>
-                </label>
-                <span id="file-name"></span>
               </div>
               <button type="button" onclick="enviaAoClicar()" class="butons-bot">
                 Registrar
               </button>
-              <button type="button" onclick="lerDadosDaTabela()" class="butons-bot">Atualizar</button>
             </form>
             <div class="divatabela">
               <table id="tabela" class="display">
                 <thead>
                   <tr>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
+                    <th>ID</th>
+                    <th>Tipo do chamado</th>
+                    <th>Solicitante</th>
+                    <th>Função</th>
+                    <th>Descrição</th>
+                    <th>Infotmação extra</th>
+                    <th>Hora</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                  </tr>
+                  <tr>
+                    <td>2</td>
+                    <td>Requisição</td>
+                    <td>Pedro</td>
+                    <td>CPD</td>
+                    <td>jkhsjkhksjdhksjd</td>
+                    <td>ksdjhskdhlsk</td>
+                    <td>21:10</td>
+                    <td>26/08/2025</td>
+                    <td>Concuido</td>
+                  
                   </tr>
                 </thead>
               </table>
@@ -161,7 +159,6 @@
           </div>
         </div>
       </div>
-    </div>
     <script src="javaScript.js"></script>
   </body>
 </html>
