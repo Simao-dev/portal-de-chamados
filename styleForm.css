@@ -63,7 +63,6 @@ body {
   background: var(--cor-cardescaixas);
   padding: 20px;
   display: flex;
-  justify-content: center;
   align-items: flex-start; 
   margin: 10px 10px 10px 25px;
   border-radius: 10px;
