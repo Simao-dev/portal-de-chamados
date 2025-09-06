@@ -95,7 +95,7 @@ botoes.forEach(botao => {
 });
 
 /** Mostrar o primeiro menu ao carregar a página */
-document.getElementById('telefone').classList.add('conteudo-ativo');
+document.getElementById('metricas').classList.add('conteudo-ativo');
 
 function enviaAoClicar() {
     const dados = {

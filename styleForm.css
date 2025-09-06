@@ -1,24 +1,44 @@
 /*<style>*/
 :root {
-    --cor-fundoprincipal: #f9fafb;
-    --cor-cardescaixas: #ffffff;
-    --cor-primaria: #2563eb;
-    --cor-secundaria: #6b7280;
-    --cor-textoprincipal: #111824;
-    --cor-linhas: #f3f4f6;
+  --cor-fundoprincipal: #f9fafb;
+  --cor-cardescaixas: #ffffff;
+  --cor-primaria: #2563eb;
+  --cor-secundaria: #6b7280;
+  --cor-textoprincipal: #111824;
+  --cor-linhas: #f3f4f6;
 
-    --cor-pendente: #f59e0b;
-    --cor-emandamento: #3b82f6;
-    --cor-acaopositiva: #10b981;
-    --cor-acaoalerta: #ef4444;
+  --cor-pendente: #f59e0b;
+  --cor-emandamento: #3b82f6;
+  --cor-acaopositiva: #10b981;
+  --cor-acaoalerta: #ef4444;
+
+  --dashboard-bg: #1c1c1c;
+  /* Fundo geral escuro */
+  --card-bg: #2d2d2d;
+  /* Fundo dos cards */
+  --text-color-light: #f0f0f0;
+  /* Texto claro */
+  --text-color-faded: #a0a0a0;
+  /* Texto mais apagado (período) */
+  --progress-track-color: #555;
+  /* Cor da trilha do progresso */
+
+  /* Cores dos gradientes dos ícones e barras de progresso */
+  --sales-gradient-start: #7f52ff;
+  --sales-gradient-end: #b399ff;
+  --expenses-gradient-start: #ff527f;
+  --expenses-gradient-end: #ff99b3;
+  --income-gradient-start: #52ff7f;
+  --income-gradient-end: #99ffb3;
 
 }
+
 body {
   font-family: 'Inter', sans-serif;
   height: 100%;
   margin: 0;
   color: var(--cor-textoprincipal);
-  
+
 }
 
 .container {
@@ -28,6 +48,7 @@ body {
   overflow-x: auto;
   margin: 0 auto;
 }
+
 .menu {
   margin: 10px;
   border-radius: 10px;
@@ -35,8 +56,9 @@ body {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
 }
+
 .menu button {
   background-color: var(--cor-cardescaixas);
   border: none;
@@ -49,25 +71,199 @@ body {
   border-radius: 5px;
 
 }
+
 .menu i {
   margin-right: 10px;
 }
+
 .menu button:hover {
   background-color: var(--cor-primaria);
   transition: 1s;
   color: var(--cor-cardescaixas);
 
 }
+
 .funcoes {
-  flex: 1; /* ocupa todo o resto do espaço */
+  flex: 1;
+  /* ocupa todo o resto do espaço */
   background: var(--cor-cardescaixas);
   padding: 20px;
   display: flex;
-  align-items: flex-start; 
+  align-items: flex-start;
   margin: 10px 10px 10px 25px;
   border-radius: 10px;
   box-shadow: 0px 0 10px rgba(0, 0, 0, 0.05);
+  /*NOVO*/
+  flex-direction: column;
 }
+
+/*ARIA METRICAS*/
+
+.metricas-main {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.metricas-main>div:first-child {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 20px;
+}
+
+.metricas-main h3.tipo {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--cor-textoprincipal);
+  margin: 0;
+  text-align: left;
+}
+
+.metricas-main p {
+  color: var( --cor-linhas);
+  font-size: 20px;
+  margin: 0;
+}
+
+.cards-chamados {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 20px;
+  width: 100%;
+
+}
+
+.card1 {
+  display: flex;
+  align-items: center;
+  background-color: var(--cor-primaria);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  flex: 1;
+  min-width: 300px;
+  height: 180px;
+  color: var(--text-color-light);
+  position: relative;
+}
+
+.card-icon-wrapper {
+  background: linear-gradient(45deg, var(--sales-gradient-start), var(--sales-gradient-end));
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 15px;
+}
+
+.card-icon-wrapper i {
+    font-size: 24px;
+    color: var(--text-color-light);
+}
+
+.card-details {
+    flex-grow: 1;
+}
+
+.card-title {
+    font-size: 16px;
+    color: var(--text-color-faded);
+    margin-bottom: 5px;
+}
+
+.card-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--text-color-light);
+    margin: 0;
+}
+
+.card-period {
+    font-size: 12px;
+    color: var(--text-color-faded);
+    margin-top: 5px;
+}
+
+.card-progress {
+    position: relative;
+    width: 80px; 
+    height: 80px;
+    margin-left: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.progress-ring-track {
+    stroke: var(--progress-track-color);
+}
+
+.progress-ring-bar {
+    transform: rotate(-90deg); /* Inicia o progresso no topo */
+    transform-origin: 50% 50%; /* Ponto de rotação */
+    transition: stroke-dashoffset 0.5s ease-out; /* Animação suave */
+    /* Estas propriedades serão calculadas com JavaScript ou definidas manualmente */
+    stroke-dasharray: 188.4; /* (2 * PI * r) onde r é 30 (2 * 3.14159 * 30 = 188.49) */
+    stroke-dashoffset: calc(188.4 - (188.4 * var(--percentage)) / 100);
+    /* Exemplo para 90% -> stroke-dashoffset: calc(188.4 - (188.4 * 90) / 100); */
+}
+
+
+.card-percentage {
+    position: absolute;
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--text-color-light);
+}
+
+/* Estilos específicos para cada card (cores de gradiente e progresso) */
+/* Card 1: Total Sales */
+.cards-chamados .card1:nth-child(1) .card-icon-wrapper {
+    background: linear-gradient(45deg, #7f52ff, #b399ff); 
+}
+.cards-chamados .card1:nth-child(1) .progress-ring-bar {
+    stroke: #8e70ff; 
+    --percentage: 90; /* Defina a porcentagem diretamente no CSS ou via JS */
+}
+.cards-chamados .card1:nth-child(1) .card-value {
+    color: #8e70ff; 
+}
+
+
+/* Card 2: Total Expenses */
+.cards-chamados .card1:nth-child(2) .card-icon-wrapper {
+    background: linear-gradient(45deg, #ff527f, #ff99b3); 
+}
+.cards-chamados .card1:nth-child(2) .progress-ring-bar {
+    stroke: #ff708e; 
+    --percentage: 62;
+}
+.cards-chamados .card1:nth-child(2) .card-value {
+    color: #ff708e;
+}
+
+
+/* Card 3: Total Income */
+.cards-chamados .card1:nth-child(3) .card-icon-wrapper {
+    background: linear-gradient(45deg, #52ff7f, #99ffb3); 
+}
+.cards-chamados .card1:nth-child(3) .progress-ring-bar {
+    stroke: #70ff8e; 
+    --percentage: 44;
+}
+.cards-chamados .card1:nth-child(3) .card-value {
+    color: #70ff8e;
+}
+
+
+
+/*ARIA METRICAS*/
 
 /* oculta todos os menus*/
 .form-area {
@@ -76,9 +272,12 @@ body {
 
 .conteudo-ativo {
   display: block;
+  /*mudou*/
+  width: 100%
 }
+
 /*alterado*/
-.butons-top{
+.butons-top {
   border-radius: 5px;
   border: 2px solid #ddd;
   background-color: var(--cor-cardescaixas);
@@ -86,18 +285,21 @@ body {
   cursor: pointer;
   padding: 0 0 0 5px;
 }
+
 /*alterado*/
 
 .idchamado input {
   width: 50px;
   height: 25px;
 }
+
 /*alterado*/
 .div_select {
   display: flex;
   justify-content: flex-start;
   gap: 90px;
 }
+
 /*alterado*/
 select {
   border: 2px solid #ddd;
@@ -113,7 +315,7 @@ select {
   align-items: flex-start;
   flex-direction: column;
   gap: 25px;
-  
+
 }
 
 /*alterado*/
@@ -136,33 +338,39 @@ select {
   cursor: pointer;
   transition: box-shadow 0.3s ease;
 }
+
 .butons-bot:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
 .divatabela {
   margin-top: 55px;
-  overflow-y: auto; 
-  overflow-x: auto; 
+  overflow-y: auto;
+  overflow-x: auto;
   display: flex;
   justify-content: center;
   border-radius: 8px;
 }
+
 .divatabela table {
   width: 100%;
-  table-layout: fixed; 
+  table-layout: fixed;
   border-collapse: collapse;
-  
+
 }
+
 table {
   border-collapse: collapse;
   width: 100%;
   background-color: white;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
+
 thead {
   background-color: #2e2545;
   color: white;
 }
+
 th,
 td {
   padding: 16px;
@@ -173,18 +381,22 @@ td {
 tbody tr:nth-child(even) td {
   background-color: #f9f9f9;
 }
+
 td:not(:first-child):hover {
   background-color: #8e9ccf;
   color: white;
   cursor: pointer;
 }
+
 .divatabela thead {
   position: sticky;
   top: 0;
-  background-color: var(--cor-primaria); /* cor do seu cabeçalho */
+  background-color: var(--cor-primaria);
+  /* cor do seu cabeçalho */
   color: white;
   z-index: 1;
 }
+
 .divatabela th,
 .divatabela td {
   word-wrap: break-word;
@@ -194,7 +406,7 @@ td:not(:first-child):hover {
 }
 
 /* Aba de estilização do menu CRIAR USUARIO*/
-.div_cadastro{
+.div_cadastro {
   margin-top: 50px;
   display: flex;
   align-items: flex-start;
@@ -219,10 +431,12 @@ img {
 .tipo {
   text-align: center;
 }
+
 .footer {
   display: flex;
   justify-content: center;
   font-size: 20px;
   color: white;
 }
+
 /*</style>*/

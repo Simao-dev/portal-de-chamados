@@ -1,164 +1,196 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chamados</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
-    />
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <!-- DataTables JS e CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css"
-    />
-    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
-      
-    <link rel="stylesheet" href="styleForm.css" />
-    <!--<?!= include("styleForm") ?> tag que puxa outros arquivos no apps script-->
-    <!--<?!= include("javaScript") ?> tag que puxa outros arquivos no apps script-->
-  </head>
-  <body>
-      <div class="container">
-        <div class="menu">
-          <button class="menu-navegação" data-alvo="chamados"><i class="bi bi-clipboard-check-fill"></i>Chamados</button>
-          <button class="menu-navegação" data-alvo="pesquisa" ><i class="bi bi-search"></i>Pesquisar</button>
-          <button class="menu-navegação" data-alvo="metricas"><i class="bi bi-bar-chart-fill"></i>Metricas</button>
-          <button class="menu-navegação" data-alvo="telefone"><i class="bi bi-telephone-minus-fill"></i>Chamados via telefone</button>
-          <button class="menu-navegação" data-alvo="cadastro"><i class="bi bi-person-fill"></i>Criar usario</button>
-        </div>
-        <div class="funcoes">
-          <div class="form-area" id="chamados">
-            <h3 class="tipo">Chamados</h3>
-          </div>
-          <!-- MENU PESQUISA -->
-          <div class="form-area" id="pesquisa">
-            <h3 class="tipo">Pesquisa</h3>
-          </div>
-          <!--MENU METRICAS-->
-          <div class="form-area" id="metricas">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chamados</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <!-- DataTables JS e CSS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css" />
+  <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
+
+  <link rel="stylesheet" href="styleForm.css" />
+  <!--<?!= include("styleForm") ?> tag que puxa outros arquivos no apps script-->
+  <!--<?!= include("javaScript") ?> tag que puxa outros arquivos no apps script-->
+</head>
+
+<body>
+  <div class="container">
+    <div class="menu">
+      <button class="menu-navegação" data-alvo="chamados"><i class="bi bi-clipboard-check-fill"></i>Chamados</button>
+      <button class="menu-navegação" data-alvo="pesquisa"><i class="bi bi-search"></i>Pesquisar</button>
+      <button class="menu-navegação" data-alvo="metricas"><i class="bi bi-bar-chart-fill"></i>Metricas</button>
+      <button class="menu-navegação" data-alvo="telefone"><i class="bi bi-telephone-minus-fill"></i>Chamados via
+        telefone</button>
+      <button class="menu-navegação" data-alvo="cadastro"><i class="bi bi-person-fill"></i>Criar usario</button>
+    </div>
+    <div class="funcoes">
+      <div class="form-area" id="chamados">
+        <h3 class="tipo">Chamados</h3>
+      </div>
+      <!-- MENU PESQUISA -->
+      <div class="form-area" id="pesquisa">
+        <h3 class="tipo">Pesquisa</h3>
+      </div>
+      <!--MENU METRICAS-->
+      <div class="form-area" id="metricas">
+        <div class="metricas-main">
+          <div>
             <h3 class="tipo">Metricas</h3>
+            <p>15/09/2025</p>
           </div>
-          <!--MENU CHAMADOS VIA TELEFONE-->
-          <div class="form-area" id="telefone">
-            <div class="boas-vindas">
-              <h2>Cadasto de usuários</h2>
+          <div class="cards-chamados">
+            <div class="card1">
+              <div class="card-icon-wrapper">
+                <i class="bi bi-sort-up-alt"></i>
+              </div>
+              <div class="card-details">
+                <p class="card-title">Total de Chamados</p>
+                <p class="card-value">900</p>
+                <p class="card-period">Últimas 24 Horas</p>
+              </div>
+              <div class="card-progress">
+                <svg class="progress-ring" width="80" height="80">
+                  <circle class="progress-ring-track" stroke="#555" stroke-width="8" fill="transparent" r="30" cx="40"
+                    cy="40" />
+                  <circle class="progress-ring-bar" stroke="#8e70ff" stroke-width="8" fill="transparent" r="30" cx="40"
+                    cy="40" />
+                </svg>
+                <span class="card-percentage">90%</span>
+              </div>
             </div>
-            <form class="formulario">
-              <div class="div_select">
-                
-                <div class="idchamado">
-                  <label for="idDoChamado">ID</label><br />
-                  <input type="text" id="idDoChamado" disabled />
-                </div>
-                <select name="tipoDoChamado" id="tipoDoChamado" class="butons-top" required>
-                  <option>Tipo de chamado</option>
-                  <option>Requisição</option>
-                  <option>Rotina do setor</option>
-                  <option>Incidente</option>
-                </select>
-                <select name="solicitante" id="solicitante"  class="butons-top" required>
-                  <option>Solicitante</option>
-                  <option>Cleres Gerência</option>
-                  <option>Valdeny</option>
-                  <option>Thayonara</option>
-                </select>
-                <select name="statusChamado" id="statusChamado" class="butons-top" required>
-                  <option value="">Status</option>
-                  <option>Concluído</option>
-                  <option>Pendente</option>
-                </select>
+            <div class="card1">
+              <div class="card-icon-wrapper">
+                <i class="bi bi-reception-4"></i>
               </div>
-              <div class="div_descricao">
-                <input
-                  type="text"
-                  placeholder="Descrição do chamado"
-                  name="descricao"
-                  id="descricao"
-                />
-                <input
-                  type="text"
-                  name="upload"
-                  id="informacaoExtra"
-                  placeholder="Informação extra"
-                />
+              <div class="card-details">
+                <p class="card-title">Top 1 Solicitações</p>
+                <p class="card-value">50</p>
+                <p class="card-period">Últimas 24 Horas</p>
               </div>
-              <button type="button" onclick="enviaAoClicar()" class="butons-bot">
-                Registrar
-              </button>
-            </form>
-            <div class="divatabela">
-              <table id="tabela" class="display">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Tipo do chamado</th>
-                    <th>Solicitante</th>
-                    <th>Função</th>
-                    <th>Descrição</th>
-                    <th>Infotmação extra</th>
-                    <th>Hora</th>
-                    <th>Data</th>
-                    <th>Status</th>
-                  </tr>
-                  <tr>
-                    <td>2</td>
-                    <td>Requisição</td>
-                    <td>Pedro</td>
-                    <td>CPD</td>
-                    <td>jkhsjkhksjdhksjd</td>
-                    <td>ksdjhskdhlsk</td>
-                    <td>21:10</td>
-                    <td>26/08/2025</td>
-                    <td>Concuido</td>
-                  
-                  </tr>
-                </thead>
-              </table>
+              <div class="card-progress">
+                <svg class="progress-ring" width="80" height="80">
+                  <circle class="progress-ring-track" stroke="#555" stroke-width="8" fill="transparent" r="30" cx="40"
+                    cy="40" />
+                  <circle class="progress-ring-bar" stroke="#8e70ff" stroke-width="8" fill="transparent" r="30" cx="40"
+                    cy="40" />
+                </svg>
+                <span class="card-percentage">30%</span>
+              </div>
             </div>
-          </div>
-          <!--MENU DE CADASTRO DE USUÁRIOS-->
-          <div class="form-area" id="cadastro">
-            <div class="boas-vindas">
-              <h2>Cadasto de usuários</h2>
-              <h3> Olá Pedro Simão</h3>
+            <div class="card1">
+              <div class="card-icon-wrapper">
+                <i class="bi bi-clipboard-check"></i>
+              </div>
+              <div class="card-details">
+                <p class="card-title">Top 1 Tipo</p>
+                <p class="card-value">60</p>
+                <p class="card-period">Pedro CPD</p>
+              </div>
+              <div class="card-progress">
+                <svg class="progress-ring" width="80" height="80">
+                  <circle class="progress-ring-track" stroke="#555" stroke-width="8" fill="transparent" r="30" cx="40"
+                    cy="40" />
+                  <circle class="progress-ring-bar" stroke="#8e70ff" stroke-width="8" fill="transparent" r="30" cx="40"
+                    cy="40" />
+                </svg>
+                <span class="card-percentage">50%</span>
+              </div>
             </div>
-              <div class="div_cadastro">
-                <input
-                  type="text"
-                  placeholder=" Nome"
-                  name="descricao"
-                  id="nome"
-                />
-                <input
-                  type="text"
-                  placeholder="Sobrenome"
-                  name="descricao"
-                  id="nome"
-                />
-                <input
-                  type="text"
-                  placeholder=" Cargo"
-                  name="descricao"
-                  id="cargo"
-                />
-                <input
-                  type="text"
-                  placeholder="Função"
-                  name="descricao"
-                  id="cargo"
-                />
-              </div>
-              <div>
-                <button type="button" onclick="" class="butons-bot">Criar</button>
-                <button type="button" onclick="" class="butons-bot">Lista</button>
-                <button type="button" onclick="" class="butons-bot">Deletar</button>
-              </div>
           </div>
         </div>
       </div>
-    <script src="javaScript.js"></script>
-  </body>
+      <!--MENU CHAMADOS VIA TELEFONE-->
+      <div class="form-area" id="telefone">
+        <div class="boas-vindas">
+          <h2>Cadasto de usuários</h2>
+        </div>
+        <form class="formulario">
+          <div class="div_select">
+
+            <div class="idchamado">
+              <label for="idDoChamado">ID</label><br />
+              <input type="text" id="idDoChamado" disabled />
+            </div>
+            <select name="tipoDoChamado" id="tipoDoChamado" class="butons-top" required>
+              <option>Tipo de chamado</option>
+              <option>Requisição</option>
+              <option>Rotina do setor</option>
+              <option>Incidente</option>
+            </select>
+            <select name="solicitante" id="solicitante" class="butons-top" required>
+              <option>Solicitante</option>
+              <option>Cleres Gerência</option>
+              <option>Valdeny</option>
+              <option>Thayonara</option>
+            </select>
+            <select name="statusChamado" id="statusChamado" class="butons-top" required>
+              <option value="">Status</option>
+              <option>Concluído</option>
+              <option>Pendente</option>
+            </select>
+          </div>
+          <div class="div_descricao">
+            <input type="text" placeholder="Descrição do chamado" name="descricao" id="descricao" />
+            <input type="text" name="upload" id="informacaoExtra" placeholder="Informação extra" />
+          </div>
+          <button type="button" onclick="enviaAoClicar()" class="butons-bot">
+            Registrar
+          </button>
+        </form>
+        <div class="divatabela">
+          <table id="tabela" class="display">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tipo do chamado</th>
+                <th>Solicitante</th>
+                <th>Função</th>
+                <th>Descrição</th>
+                <th>Infotmação extra</th>
+                <th>Hora</th>
+                <th>Data</th>
+                <th>Status</th>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Requisição</td>
+                <td>Pedro</td>
+                <td>CPD</td>
+                <td>jkhsjkhksjdhksjd</td>
+                <td>ksdjhskdhlsk</td>
+                <td>21:10</td>
+                <td>26/08/2025</td>
+                <td>Concuido</td>
+
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+      <!--MENU DE CADASTRO DE USUÁRIOS-->
+      <div class="form-area" id="cadastro">
+        <div class="boas-vindas">
+          <h2>Cadasto de usuários</h2>
+          <h3> Olá Pedro Simão</h3>
+        </div>
+        <div class="div_cadastro">
+          <input type="text" placeholder=" Nome" name="descricao" id="nome" />
+          <input type="text" placeholder="Sobrenome" name="descricao" id="nome" />
+          <input type="text" placeholder=" Cargo" name="descricao" id="cargo" />
+          <input type="text" placeholder="Função" name="descricao" id="cargo" />
+        </div>
+        <div>
+          <button type="button" onclick="" class="butons-bot">Criar</button>
+          <button type="button" onclick="" class="butons-bot">Lista</button>
+          <button type="button" onclick="" class="butons-bot">Deletar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="javaScript.js"></script>
+</body>
+
 </html>
