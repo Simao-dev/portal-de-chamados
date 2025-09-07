@@ -121,10 +121,29 @@ body {
   text-align: left;
 }
 
-.metricas-main p {
-  color: var( --cor-linhas);
-  font-size: 20px;
+.metricas-main input {
+  color: var( --cor-textoprincipal);
+  font-size: 18px;
+  width: 100px;
   margin: 0;
+  border-radius: 8px;
+}
+.metricas-main button {
+  border-radius: 8px;
+  background-color: var(--cor-primaria);
+  border: none;
+  padding: 8px;
+  color: var(--text-color-light);
+  cursor: pointer;
+}
+
+.metricas-main button:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.metricas-main label {
+  color: var( --cor-textoprincipal);
+  font-size: 20px;
 }
 
 .cards-chamados {

@@ -12,6 +12,9 @@
   <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
 
   <link rel="stylesheet" href="styleForm.css" />
+  <!--Importa calendario-->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <!--<?!= include("styleForm") ?> tag que puxa outros arquivos no apps script-->
   <!--<?!= include("javaScript") ?> tag que puxa outros arquivos no apps script-->
 </head>
@@ -39,7 +42,13 @@
         <div class="metricas-main">
           <div>
             <h3 class="tipo">Metricas</h3>
-            <p>15/09/2025</p>
+            <div>
+              <label for="data-inicial">De:</label>
+              <input type="text" id="data-inicial">
+              <label for="data-inicial">Até:</label>
+              <input type="text" id="data-inicial">
+               <button type="button" onclick="enviaDatas()">Aplicar</button>
+            </div>
           </div>
           <div class="cards-chamados">
             <div class="card1">

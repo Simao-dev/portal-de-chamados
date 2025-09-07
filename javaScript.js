@@ -1,5 +1,37 @@
 /*<script>*/
 
+/*  ABA METRICAS */
+// IMPORT DE CALENDARIO
+
+flatpickr("#data-inicial", {
+  dateFormat: "d/m/Y", 
+});
+
+
+function enviaDatas(){
+    const dataIncial = document.getElementById("data-inicial")
+    const dataFinal = document.getElementById("data-final")
+
+    console.log(dataFinal, dataFinal)
+  
+    const datas = {
+    qualFuncao : "metricas",
+    dataIncial: dataIncial , 
+    dataFinal:  dataFinal
+
+  };
+  google.script.run
+    .withSuccessHandler(function(resposta) {
+    alert(resposta)
+    }
+  )
+  .roteadorChamado(datas);
+};
+
+
+
+/*  ABA METRICAS */
+
 document.addEventListener("DOMContentLoaded", function() {
 
   // A função login agora não precisa ser global, ela pode ficar aqui dentro.
