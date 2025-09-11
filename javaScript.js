@@ -4,20 +4,34 @@
 // IMPORT DE CALENDARIO
 
 flatpickr("#data-inicial", {
-  dateFormat: "d/m/Y", 
+  mode: "range",
+  dateFormat: "d/m/Y"
 });
 
-
 function enviaDatas(){
-    const dataIncial = document.getElementById("data-inicial")
-    const dataFinal = document.getElementById("data-final")
+    const dataIncial = document.getElementById("data-inicial").value;
 
-    console.log(dataFinal, dataFinal)
+    if (!dataIncial){
+      alert("Por favor, selecione um intervalo de datas.");
+      return;
+    }
+
+    // Divide a string em duas partes usando o 'to' como separador
+    const datasArray = dataIncial.split("to");
+
+      //array com as duas datas
+    const dataInicialValor = datasArray[0];
+    const dataFinalValor = datasArray[1]
+
+    const dataInicialFormatada = converteData(dataInicialValor);
+    const dataIncialFormatada = converteData(dataFinalValor);
+
+    console.log(dataInicialFormatada, dataIncialFormatada )
   
     const datas = {
     qualFuncao : "metricas",
-    dataIncial: dataIncial , 
-    dataFinal:  dataFinal
+    dataIncial: dataIncialFormatada,
+    dataFibal: dataIncialFormatada
 
   };
   google.script.run
@@ -28,61 +42,19 @@ function enviaDatas(){
   .roteadorChamado(datas);
 };
 
+  //converte data
+function converteData (dataValor){
+  const partes = dataValor.split("/")
+
+    // partes[0] = dia, partes[1] = mês, partes[2] = ano
+  return `${partes[2]}-${partes[1]}-${partes[0]}`;
+
+}
+
 
 
 /*  ABA METRICAS */
 
-document.addEventListener("DOMContentLoaded", function() {
-
-  // A função login agora não precisa ser global, ela pode ficar aqui dentro.
-  function login(event) {
-    // Isso é importante para evitar que a página recarregue.
-    event.preventDefault(); 
-
-    const nome = document.getElementById("usuarioLogin").value.trim();
-    const senha = document.getElementById("senhaLogin").value.trim();
-
-    if (!nome || !senha) {
-      alert("Preencha todos os campos!");
-      return;
-    }
-
-    const dados = {
-      qualFuncao: "fazLogin",
-      nome: nome,
-      senha: senha
-    };
-
-    google.script.run
-      .withSuccessHandler(function(resposta) {
-        const mainLogin = document.getElementById("main-login");
-        const loginContainer = document.getElementById("login-container");
-
-        if (resposta === true) {
-          alert("Login realizado com sucesso!");
-          mainLogin.style.display = "block";
-          loginContainer.style.display = "none";
-        } else {
-          alert("Usuário ou senha inválidos.");
-          loginContainer.style.display = "block";
-          mainLogin.style.display = "none";
-        }
-      })
-      .roteadorChamado(dados);
-  }
-
-  // Agora, a gente busca o botão e adiciona o evento de clique.
-  // Usamos 'type="button"' para garantir que ele não envie o formulário.
-  const loginButton = document.querySelector('button[type="button"]');
-  
-  // Verificamos se o botão existe antes de adicionar o evento.
-  if (loginButton) {
-    loginButton.addEventListener('click', login);
-  } else {
-    console.error("Botão de login não encontrado.");
-  }
-
-});
 
   /** Muda o estilo padrão do botão de envio de aquivos */
 function updateFileName() {
