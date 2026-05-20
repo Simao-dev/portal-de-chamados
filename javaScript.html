@@ -1,0 +1,416 @@
+<script>
+
+/** NAVEGAÇÃO ENTRE MENUS */
+const botoes = document.querySelectorAll(".menu-navegação");
+const telasFuncoes = document.querySelectorAll(".form-area");
+
+botoes.forEach(botao => {
+  botao.addEventListener("click", () => {
+    telasFuncoes.forEach(conteudo => {
+      conteudo.classList.remove("conteudo-ativo");
+    });
+    
+    botoes.forEach(b => b.classList.remove("active-nav"));
+
+    const alvo = botao.dataset.alvo;
+    const conteudoParaMostrar = document.getElementById(alvo);
+
+    if (conteudoParaMostrar) {
+      conteudoParaMostrar.classList.add("conteudo-ativo");
+      botao.classList.add("active-nav");
+    }
+    
+    // Força o recálculo de colunas do DataTables ao trocar de aba para evitar bugs de tamanho
+    setTimeout(() => {
+      $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+    }, 50);
+  });
+});
+
+/** Mostrar o primeiro menu ao carregar a página */
+document.getElementById('metricas').classList.add('conteudo-ativo');
+document.querySelector('[data-alvo="metricas"]').classList.add('active-nav');
+
+
+/** ABA METRICAS */
+flatpickr("#data-inicial", {
+  mode: "range",
+  dateFormat: "d/m/Y"
+});
+
+function inicializaPainel() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoje.getDate()).padStart(2, '0');
+  
+  const dataPadrao = `${ano}-${mes}-${dia}`;
+  
+  const dados = {
+    qualFuncao: "metricas",
+    dataInicial: dataPadrao,
+    dataFinal: dataPadrao
+  };
+
+  google.script.run
+    .withSuccessHandler(exibeMetricas) 
+    .roteadorChamado(dados);
+}
+
+function exibeMetricas(resposta) {
+  const elementoTotal = document.getElementById("total-chamados");
+  const elementoPeriodo = document.getElementById("periodo-selecionado");
+  const elementoPorcentagem = document.getElementById("porcentagem-chamados");
+  const progressRingBarTotal = document.querySelector(".card1:nth-child(1) .progress-ring-bar");
+
+  elementoTotal.textContent = resposta.total;
+  const dataInicialFormatada = formataDataParaExibicao(resposta.periodoInicial);
+  const dataFinalFormatada = formataDataParaExibicao(resposta.periodoFinal);
+  elementoPeriodo.textContent = `${dataInicialFormatada} a ${dataFinalFormatada}`;
+  
+  const porcentagemTotal = parseFloat(resposta.porcentagem);
+  elementoPorcentagem.textContent = `${porcentagemTotal}%`;
+  progressRingBarTotal.style.setProperty('--percentage-total', porcentagemTotal);
+
+  const elementoNomeSolicitante = document.getElementById("nome-solicitante");
+  const elementoChamadosSolicitante = document.getElementById("chamados-solicitante");
+  const elementoPorcentagemSolicitante = document.getElementById("porcentagem-solicitante");
+  const progressRingBarSolicitante = document.querySelector(".card1:nth-child(2) .progress-ring-bar-solicitante");
+
+  if (resposta.solicitanteMaisAtivo && resposta.chamadosDoMaisAtivo > 0) {
+    elementoNomeSolicitante.textContent = resposta.solicitanteMaisAtivo;
+    elementoChamadosSolicitante.textContent = `${resposta.chamadosDoMaisAtivo} chamados`;
+    
+    const porcentagemDoSolicitante = parseFloat(resposta.porcentagemSolicitante);
+    elementoPorcentagemSolicitante.textContent = `${porcentagemDoSolicitante}%`;
+    progressRingBarSolicitante.style.setProperty('--percentage-solicitante', porcentagemDoSolicitante);
+  } else {
+    elementoNomeSolicitante.textContent = "N/A";
+    elementoChamadosSolicitante.textContent = "Nenhum chamado no período";
+    elementoPorcentagemSolicitante.textContent = "0%";
+    progressRingBarSolicitante.style.setProperty('--percentage-solicitante', 0);
+  }
+  
+  const elementoNomeTipo = document.getElementById("nome-tipo");
+  const elementoChamadosDoTipo = document.getElementById("chamados-do-tipo");
+  const elementoPorcentagemTipo = document.getElementById("porcentagem-tipo");
+  const progressRingBarTipo = document.querySelector(".card1:nth-child(3) .progress-ring-bar-tipo");
+
+  if (resposta.tipoMaisAtivo && resposta.chamadosDoTipoMaisAtivo > 0) {
+    elementoNomeTipo.textContent = resposta.tipoMaisAtivo;
+    elementoChamadosDoTipo.textContent = `${resposta.chamadosDoTipoMaisAtivo} chamados`;
+    
+    const porcentagemDoTipo = parseFloat(resposta.porcentagemTipo);
+    elementoPorcentagemTipo.textContent = `${porcentagemDoTipo}%`;
+    progressRingBarTipo.style.setProperty('--percentage-tipo', porcentagemDoTipo);
+  } else {
+    elementoNomeTipo.textContent = "N/A";
+    elementoChamadosDoTipo.textContent = "Nenhum chamado no período";
+    elementoPorcentagemTipo.textContent = "0%";
+    progressRingBarTipo.style.setProperty('--percentage-tipo', 0);
+  }
+}
+
+function formataDataParaExibicao(dataString) {
+  const partes = dataString.split("-");
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+function enviaDatas() {
+    const dataInicialInput = document.getElementById("data-inicial").value;
+
+    if (!dataInicialInput) {
+        mostrarAlerta("Por favor, selecione um intervalo de datas.");
+        return;
+    }
+    
+    const datasArray = dataInicialInput.split(" to ");
+    const dataInicialFormatada = converteData(datasArray[0]);
+    const dataFinalFormatada = converteData(datasArray[1]);
+
+    const dados = {
+        qualFuncao: "metricas",
+        dataInicial: dataInicialFormatada,
+        dataFinal: dataFinalFormatada
+    };
+
+    google.script.run
+        .withSuccessHandler(exibeMetricas) 
+        .roteadorChamado(dados);
+}
+
+function converteData(dataValor) {
+    const partes = dataValor.trim().split("/");
+    return `${partes[2]}-${partes[1]}-${partes[0]}`;
+}
+
+
+/** ABA DE CADASTRO DE CHAMADOS*/
+function limparFormularioChamado() {
+    document.getElementById('idDoChamado').value = '';
+    document.getElementById('tipoDoChamado').value = '';
+    document.getElementById('solicitante').value = '';
+    document.getElementById('statusChamado').value = '';
+    document.getElementById('descricao').value = '';
+    document.getElementById('informacaoExtra').value = '';
+    document.getElementById('botaochamado').innerHTML = '<i class="bi bi-plus-circle-fill"></i> Registrar Chamado';
+}
+
+function enviaAoClicar() {
+    const solicitanteSelect = document.getElementById('solicitante');
+    const nomefuncaoCompleto = solicitanteSelect ? solicitanteSelect.value : '';
+    const [nome, funcao] = nomefuncaoCompleto.split(' - ');
+
+    const dados = {
+        qualFuncao: "entradaDeInformacoes",
+        idDoChamado: document.getElementById('idDoChamado').value,
+        tipoDoChamado: document.getElementById('tipoDoChamado').value,
+        solicitante: nome,
+        funcao: funcao,
+        statusChamado: document.getElementById('statusChamado').value,
+        descricao: document.getElementById('descricao').value,
+        informacaoExtra: document.getElementById('informacaoExtra').value
+    };
+
+    if (!dados.solicitante) {
+        mostrarAlerta("Preencha o campo Solicitante, ele é obrigatório.");
+        return;
+    }
+
+    google.script.run
+        .withSuccessHandler(function(resposta) {
+            mostrarAlerta(resposta);
+            limparFormularioChamado();
+            lerDadosDaTabela();
+        })
+      .roteadorChamado(dados);
+}
+  
+function lerDadosDaTabela() {
+    const dados = { qualFuncao: "lerChamados" };
+    google.script.run
+    .withSuccessHandler(function (resposta) {
+      preencherTabela(resposta);
+    })
+    .roteadorChamado(dados);
+}
+
+function preencherTabela(dados) {
+  if (!Array.isArray(dados) || dados.length === 0) {
+    console.warn('Nenhum dado para exibir');
+    return;
+  }
+
+  if ($.fn.DataTable.isDataTable('#tabela')) {
+    $('#tabela').DataTable().clear().destroy();
+  }
+
+  $('#tabela tbody').empty();
+
+  $('#tabela').DataTable({
+    data: dados,
+    autoWidth: false, /* Desativa o cálculo automático de largura do plugin */
+    columns: [
+      { title: "ID", data: "id", width: "7%" },
+      { title: "Tipo do chamado", data: "tipoDoChamado", width: "13%" },
+      { title: "Solicitante", data: "solicitante", width: "15%" },
+      { title: "Função", data: "funcao", width: "10%" }, 
+      { title: "Descrição", data: "descricao", width: "25%" },
+      { title: "Informação Extra", data: "informacaoExtra", width: "15%" },
+      { title: "Hora", data: "hora", width: "5%" },
+      { title: "Data", data: "data", width: "5%" },
+      { title: "Status Chamado", data: "statusChamado", width: "5%" },
+    ],
+    order: [[0, 'desc']],
+    scrollY: 'calc(100vh - 380px)', 
+    scrollCollapse: true,
+    scroller: true,
+    pageLength: 5,
+    lengthMenu: [5, 10, 20]
+  });
+
+  const table = $('#tabela').DataTable();
+  $('#tabela tbody').on('click', 'tr', function () {
+    const data = table.row(this).data();
+    
+    if (data) {
+      document.getElementById('idDoChamado').value = data.id;
+      document.getElementById('tipoDoChamado').value = data.tipoDoChamado;
+      document.getElementById('solicitante').value = data.solicitante + ' - ' + data.funcao;
+      document.getElementById('statusChamado').value = data.statusChamado;
+      document.getElementById('descricao').value = data.descricao;
+      document.getElementById('informacaoExtra').value = data.informacaoExtra;
+
+      document.getElementById('botaochamado').innerHTML = '<i class="bi bi-pencil-square"></i> Alterar Chamado';
+    }
+  });
+}
+
+
+/** CADASTRO DE USUARIOS CRIA /ALTERA /LISTAR /REMOVER */
+function limparFormulario() {
+    document.getElementById('idUsuario').value = "";
+    document.getElementById('nome').value = "";
+    document.getElementById('sobrenome').value = "";
+    document.getElementById('funcao').value = "";
+    document.getElementById('cargo').value = "";
+    document.getElementById('usuario').value = "";
+    document.getElementById('ramal').value = "";
+    document.getElementById('salvarBotao').innerHTML = '<i class="bi bi-person-plus-fill"></i> Criar';
+}
+
+function salvarUsuario() {
+  const nome = document.getElementById("nome").value;
+  const funcao = document.getElementById("funcao").value;
+
+  if (nome === "" || funcao === "") {
+    mostrarAlerta("Preencha os campos Nome e Função, eles são obrigatórios.");
+    return;
+  }
+
+  const dados = {
+    qualFuncao: "cadastraUsuario",
+    idUsuario: document.getElementById('idUsuario').value,
+    nome: document.getElementById('nome').value,
+    sobrenome: document.getElementById('sobrenome').value,
+    funcao: document.getElementById('funcao').value,
+    cargo: document.getElementById('cargo').value,
+    usuario: document.getElementById('usuario').value,
+    ramal: document.getElementById('ramal').value
+  };
+
+  google.script.run
+    .withSuccessHandler(function (resposta) {
+      mostrarAlerta(resposta);
+      limparFormulario();
+      lerDadosDosUsuarios();
+      preencherSelectSolicitante(); 
+    })
+    .roteadorChamado(dados);
+}
+
+function lerDadosDosUsuarios() {
+  const dados = { qualFuncao: "lerUsuarios" };
+  google.script.run
+    .withSuccessHandler(function (resposta) {
+      preencherTabelaUsuario(resposta);
+    })
+    .roteadorChamado(dados);
+}
+
+function deletarUsuario(){
+  const dados = {
+    qualFuncao: "deletarUsuarios",
+    idUsuario: document.getElementById('idUsuario').value,
+    nome: document.getElementById('nome').value,
+    sobrenome: document.getElementById('sobrenome').value,
+    funcao: document.getElementById('funcao').value,
+    cargo: document.getElementById('cargo').value,
+    usuario: document.getElementById('usuario').value,
+    ramal: document.getElementById('ramal').value
+  };
+    google.script.run
+    .withSuccessHandler(function (resposta) {
+      mostrarAlerta(resposta);
+      limparFormulario();
+      lerDadosDosUsuarios();
+    })
+    .roteadorChamado(dados);
+}
+
+function preencherTabelaUsuario(dados) {
+  if (!Array.isArray(dados) || dados.length === 0) {
+    console.warn('Nenhum dado para exibir');
+    return;
+  }
+
+  if ($.fn.DataTable.isDataTable('#tabelausuarios')) {
+    $('#tabelausuarios').DataTable().clear().destroy();
+  }
+
+  $('#tabelausuarios tbody').empty();
+
+  const table = $('#tabelausuarios').DataTable({
+    data: dados,
+    autoWidth: false, /* Desativa o cálculo automático de largura do plugin */
+    columns: [
+      { title: "ID", data: "id", width: "0%" },
+      { title: "Nome", data: "nome", width: "20%" },
+      { title: "Sobrenome", data: "sobrenome", width: "20%" },
+      { title: "Função", data: "funcao", width: "20%" },
+      { title: "Cargo", data: "cargo", width: "20%" },
+      { title: "Usuário", data: "usuario", width: "12%" },
+      { title: "Ramal", data: "ramal", width: "8%" },
+    ],
+    columnDefs: [
+      { targets: [0], visible: false, searchable: false },
+    ],
+    order: [[0, 'desc']],
+    scrollY: 'calc(100vh - 380px)', 
+    scrollCollapse: true,
+    scroller: true
+  });
+
+  $('#tabelausuarios tbody').on('click', 'tr', function () {
+    const data = table.row(this).data();
+    
+    if (data) {
+      document.getElementById('idUsuario').value = data.id;
+      document.getElementById('nome').value = data.nome;
+      document.getElementById('sobrenome').value = data.sobrenome;
+      document.getElementById('funcao').value = data.funcao;
+      document.getElementById('cargo').value = data.cargo;
+      document.getElementById('usuario').value = data.usuario;
+      document.getElementById('ramal').value = data.ramal;
+
+      document.getElementById('salvarBotao').innerHTML = '<i class="bi bi-save-fill"></i> Salvar';
+    }
+  });
+}
+function preencherSelectSolicitante() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      const select = document.getElementById('solicitante');
+      select.innerHTML = '<option value="" disabled selected>Selecione um solicitante...</option>';
+      
+      data.forEach(function(item) {
+        if (item.nome && item.cargo) {
+          const option = document.createElement('option');
+          option.value = item.nome + ' - ' + item.cargo; 
+          option.textContent = item.nome + ' - ' + item.cargo;
+          select.appendChild(option);
+        }
+      });
+    })
+    .listarNomeCargo();
+}
+
+/* ==========================================================================
+   FUNÇÕES GLOBAIS DO MODAL DE ALERTA CUSTOMIZADO
+   ========================================================================== */
+function mostrarAlerta(mensagem) {
+  const modal = document.getElementById('customAlertModal');
+  const txtMensagem = document.getElementById('customAlertMessage');
+  
+  if (modal && txtMensagem) {
+    txtMensagem.textContent = message = mensagem;
+    modal.classList.add('modal-open');
+  }
+}
+
+function fecharModalAlerta() {
+  const modal = document.getElementById('customAlertModal');
+  if (modal) {
+    modal.classList.remove('modal-open');
+  }
+}
+
+/** Inicialização Unificada */
+window.onload = function () {
+    lerDadosDaTabela();
+    lerDadosDosUsuarios();
+    preencherSelectSolicitante();
+    inicializaPainel();
+};
+
+</script>

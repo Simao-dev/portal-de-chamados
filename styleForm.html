@@ -1,0 +1,822 @@
+<style>
+:root {
+  /* Nova Base Visual: Universo Slate Escuro */
+  --cor-fundoprincipal: #0f172a;   /* Slate 900 - Fundo Geral */
+  --cor-cardescaixas: #1e293b;     /* Slate 800 - Cards, Formulários e Sidebar */
+  --cor-linhas: #334155;           /* Slate 700 - Bordas e Divisórias discretas */
+  
+  /* Cores de Texto */
+  --cor-textoprincipal: #f1f5f9;   /* Slate 100 - Texto legível e claro */
+  --text-color-light: #ffffff;     /* Branco puro para destaques */
+  --text-color-faded: #94a3b8;     /* Slate 400 - Subtítulos e labels secundárias */
+
+  /* Identidade do Portal: Tons de Roxo e Violeta */
+  --cor-primaria: #8b5cf6;         /* Violet 500 - Botões principais e Destaques */
+  --cor-primaria-hover: #7c3aed;   /* Violet 600 - Estado de Hover */
+  --cor-secundaria: #475569;       /* Slate 600 - Elementos neutros secundários */
+
+  /* Status Informativos Sólidos e Modernos */
+  --cor-pendente: #f59e0b;         /* Amber 500 */
+  --cor-emandamento: #3b82f6;      /* Blue 500 */
+  --cor-acaopositiva: #10b981;     /* Emerald 500 */
+  --cor-acaoalerta: #ef4444;       /* Red 500 */
+
+  /* Configurações das Métricas / Anéis de Progresso */
+  --progress-track-color: #334155; /* Trilhas dos círculos menos agressivas */
+}
+
+/* Reset Geral Confortável */
+body {
+  font-family: 'Inter', sans-serif;
+  height: 100vh;
+  margin: 0;
+  background-color: var(--cor-fundoprincipal);
+  color: var(--cor-textoprincipal);
+  background-image: radial-gradient(circle at top right, rgba(139, 92, 246, 0.03), transparent 40%);
+  overflow: hidden; /* Remove de vez a barra de rolagem principal do navegador */
+}
+.dt-scroll-head{
+  overflow: hidden;
+  position: relative;
+  border: 0px;
+  width: 100%;
+}
+
+.container {
+  display: flex;
+  height: 100vh; /* Ocupa exatamente o tamanho visível do navegador */
+  max-height: 100vh;
+  width: 100vw;
+  margin: 0 auto;
+  background-color: var(--cor-fundoprincipal);
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   SIDEBAR / MENU LATERAL 
+   ========================================================================== */
+.menu {
+  margin: 16px 0 16px 16px;
+  border-radius: 12px;
+  width: 260px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  background-color: var(--cor-cardescaixas);
+  border: 1px solid var(--cor-linhas);
+  box-sizing: border-box;
+  height: calc(100vh - 32px); /* Desconta perfeitamente as margens superior e inferior */
+}
+/*teste*/
+div.dt-container div.dt-layout-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* width: 100%; */
+    margin: 5px;
+}
+
+.sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 32px 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-light);
+  letter-spacing: -0.025em;
+}
+
+.brand-dot {
+  width: 10px;
+  height: 10px;
+  background-color: var(--cor-primaria);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--cor-primaria);
+}
+
+.menu button {
+  background-color: transparent;
+  color: var(--text-color-faded);
+  border: none;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.menu i {
+  margin-right: 12px;
+  font-size: 18px;
+  transition: color 0.2s ease;
+}
+
+.menu button:hover,
+.menu button.active-nav {
+  background-color: rgba(139, 92, 246, 0.12);
+  color: var(--text-color-light);
+}
+
+.menu button:hover i,
+.menu button.active-nav i {
+  color: var(--cor-primaria);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 8px 0 8px;
+  border-top: 1px solid var(--cor-linhas);
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.4);
+}
+
+/* ==========================================================================
+   CONTEÚDO PRINCIPAL (ÁREA DE FUNÇÕES)
+   ========================================================================== */
+.funcoes {
+  flex: 1;
+  background: transparent;
+  padding: 24px;
+  display: flex;
+  /*margin: 16px;*/
+  border-radius: 12px;
+  flex-direction: column;
+  height: calc(100vh - 32px); /* Altura exata travada */
+  max-height: calc(100vh - 32px);
+  box-sizing: border-box;
+  overflow: hidden; /* Impede a janela de esticar e gerar barras feias */
+}
+
+.table.dataTable, table {
+    width: 100% !important;
+    max-width: 100% !important;
+    /* table-layout: fixed !important; */
+    border-collapse: collapse !important;
+    /* background-color: var(--cor-cardescaixas) !important; */
+    /* color: var(--cor-textoprincipal) !important; */
+    /* margin: 0 !important; */
+    box-sizing: border-box;
+}
+
+.div.dt-container div.dt-layout-row div.dt-layout-cell.dt-layout-end {
+    justify-content: flex-end;
+    margin-left: auto;
+    margin: 5px
+}
+
+div.dt-container div.dt-layout-row div.dt-layout-cell.dt-layout-start {
+    justify-content: flex-start;
+    /* margin-right: auto; */
+    margin: 5px;
+}
+
+/* Alterado de flex para grid interno com rolagem isolada no conteúdo ativo */
+.form-area {
+  display: none;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Nova estrutura interna para permitir rolagem confortável apenas de inputs e tabelas */
+.form-scrollable-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto; /* Permite rolagem fluida interna se o monitor do usuário for pequeno */
+  padding-right: 4px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.conteudo-ativo {
+  display: flex; /* Mudado para flex para herdar a altura proporcional */
+  flex-direction: column;
+}
+
+.section-header {
+  margin-bottom: 20px;
+}
+
+h3.tipo, h2.tipo-cadastro {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-color-light);
+  margin: 0 0 4px 0;
+  text-align: left;
+  letter-spacing: -0.025em;
+}
+
+.section-subtitle {
+  font-size: 13px;
+  color: var(--text-color-faded);
+  margin: 0;
+}
+
+.placeholder-view {
+  background-color: var(--cor-cardescaixas);
+  border: 2px dashed var(--cor-linhas);
+  border-radius: 12px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-color-faded);
+  max-width: 600px;
+  margin-top: 10px;
+}
+
+.placeholder-view i {
+  font-size: 40px;
+  color: rgba(148, 163, 184, 0.3);
+  display: block;
+  margin-bottom: 16px;
+}
+
+.placeholder-view p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ==========================================================================
+   ÁREA DE MÉRICAS & DASHBOARD 
+   ========================================================================== */
+.metricas-main {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.metricas-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.filtro-datas {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--cor-cardescaixas);
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--cor-linhas);
+}
+
+.filtro-datas label {
+  color: var(--text-color-faded);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.filtro-datas input {
+  background-color: var(--cor-fundoprincipal);
+  border: 1px solid var(--cor-linhas);
+  color: var(--cor-textoprincipal);
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  outline: none;
+  width: 140px;
+  transition: border-color 0.2s;
+}
+
+.filtro-datas input:focus {
+  border-color: var(--cor-primaria);
+}
+
+.btn-aplicar {
+  border-radius: 6px;
+  background-color: var(--cor-primaria);
+  border: none;
+  padding: 6px 14px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-aplicar:hover {
+  background-color: var(--cor-primaria-hover);
+}
+
+.cards-chamados {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.card1 {
+  display: flex;
+  align-items: center;
+  background-color: var(--cor-cardescaixas);
+  border: 1px solid var(--cor-linhas);
+  border-radius: 14px;
+  padding: 20px;
+  flex: 1;
+  min-width: 260px;
+  height: 120px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.card-icon-wrapper {
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 14px;
+}
+
+.card-icon-wrapper i {
+  font-size: 20px;
+  color: white;
+}
+
+.card-details {
+  flex-grow: 1;
+}
+
+.card-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-color-faded);
+  margin: 0 0 2px 0;
+}
+
+.card-value {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.card-period {
+  font-size: 11px;
+  color: var(--text-color-faded);
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+.card-progress {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin-left: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.progress-ring {
+  width: 64px;
+  height: 64px;
+}
+
+.progress-ring-track {
+  stroke: var(--progress-track-color);
+}
+
+.progress-ring-bar,
+.progress-ring-bar-solicitante,
+.progress-ring-bar-tipo {
+  transform: rotate(-90deg);
+  transform-origin: 32px 32px;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  stroke-dasharray: 188.49;
+}
+
+.progress-ring-bar { stroke-dashoffset: calc(188.49 - (188.49 * var(--percentage-total, 0)) / 100); }
+.progress-ring-bar-solicitante { stroke-dashoffset: calc(188.49 - (188.49 * var(--percentage-solicitante, 0)) / 100); }
+.progress-ring-bar-tipo { stroke-dashoffset: calc(188.49 - (188.49 * var(--percentage-tipo, 0)) / 100); }
+
+.card-percentage {
+  position: absolute;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color-light);
+}
+
+.cards-chamados .card1:nth-child(1) .card-icon-wrapper { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+.cards-chamados .card1:nth-child(1) .progress-ring-bar { stroke: #a78bfa; }
+.cards-chamados .card1:nth-child(1) .card-value { color: #ffffff; }
+
+.cards-chamados .card1:nth-child(2) .card-icon-wrapper { background: linear-gradient(135deg, #f472b6, #db2777); }
+.cards-chamados .card1:nth-child(2) .progress-ring-bar-solicitante { stroke: #f472b6; }
+.cards-chamados .card1:nth-child(2) .card-value { color: #ffffff; }
+
+.cards-chamados .card1:nth-child(3) .card-icon-wrapper { background: linear-gradient(135deg, #34d399, #059669); }
+.cards-chamados .card1:nth-child(3) .progress-ring-bar-tipo { stroke: #34d399; }
+.cards-chamados .card1:nth-child(3) .card-value { color: #ffffff; }
+
+/* ==========================================================================
+   FORMULÁRIOS & CAMPOS DE INPUT 
+   ========================================================================== */
+.formulario {
+  background-color: var(--cor-cardescaixas);
+  border: 1px solid var(--cor-linhas);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  flex-shrink: 0; /* Impede o formulário de amassar com tabelas grandes */
+}
+
+.div_select {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.idchamado {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.idchamado label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-color-faded);
+  text-transform: uppercase;
+}
+
+.idchamado input {
+  width: 75px;
+  height: 38px;
+  background-color: var(--cor-fundoprincipal);
+  border: 1px solid var(--cor-linhas);
+  color: var(--text-color-faded);
+  border-radius: 8px;
+  text-align: center;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.select-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 160px;
+}
+
+select.butons-top {
+  width: 100%;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--cor-linhas);
+  background-color: var(--cor-fundoprincipal);
+  color: var(--cor-textoprincipal);
+  font-size: 13px;
+  padding: 0 12px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+select.butons-top:focus {
+  border-color: var(--cor-primaria);
+}
+
+.div_descricao {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.div_descricao input {
+  border: 1px solid var(--cor-linhas);
+  background-color: var(--cor-fundoprincipal);
+  color: var(--cor-textoprincipal);
+  width: 100%;
+  max-width: 650px;
+  height: 40px;
+  font-size: 13px;
+  border-radius: 8px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.div_descricao input:focus {
+  border-color: var(--cor-primaria);
+}
+
+.div_descricao input::placeholder {
+  color: rgba(148, 163, 184, 0.5);
+}
+
+.actions-row {
+  margin-top: 14px;
+}
+
+.butons-bot {
+  background-color: var(--cor-primaria);
+  color: white;
+  border-radius: 8px;
+  padding: 0 16px;
+  height: 38px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.butons-bot:hover {
+  background-color: var(--cor-primaria-hover);
+}
+
+.butons-bot:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================================================
+   TELA DE CADASTRO DE USUÁRIOS
+   ========================================================================== */
+.div_cadastro {
+  background-color: var(--cor-cardescaixas);
+  border: 1px solid var(--cor-linhas);
+  border-radius: 12px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.div_cadastro input {
+  border: 1px solid var(--cor-linhas);
+  background-color: var(--cor-fundoprincipal);
+  color: var(--cor-textoprincipal);
+  width: 100%;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 13px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.div_cadastro input:focus {
+  border-color: var(--cor-primaria);
+}
+
+.div_cadastro input::placeholder {
+  color: rgba(148, 163, 184, 0.5);
+}
+
+.buttons-control-row {
+  margin: 14px 0 16px 0;
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-action-create { background-color: var(--cor-primaria); }
+.btn-action-create:hover { background-color: var(--cor-primaria-hover); }
+
+.btn-action-list { background-color: var(--cor-secundaria); }
+.btn-action-list:hover { background-color: #334155; }
+
+.btn-action-delete { background-color: var(--cor-acaoalerta); }
+.btn-action-delete:hover { background-color: #dc2626; }
+
+/* ==========================================================================
+   TABELAS DE DADOS (DATATABLES INTEGRADO)
+   ========================================================================== */
+.divatabela, .divtabelausuarios {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--cor-linhas);
+  background-color: var(--cor-cardescaixas);
+  overflow: hidden;
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Container principal gerado pelo DataTables */
+.dataTables_wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  width: 100% !important;
+  overflow: hidden !important; /* Remove qualquer chance de barra externa */
+  box-sizing: border-box;
+}
+
+/* Área interna de rolagem da estrutura do DataTables */
+.dataTables_scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  width: 100% !important;
+}
+
+/* Onde as linhas reais da tabela são renderizadas */
+.dataTables_scrollBody {
+  flex: 1;
+  overflow-y: auto !important;     /* Mantém a rolagem vertical se passar do limite */
+  overflow-x: hidden !important;   /* Mata de vez a barra de rolagem horizontal */
+  border-bottom: 1px solid var(--cor-linhas) !important;
+  width: 100% !important;
+  box-sizing: border-box;
+}
+
+table.dataTable, table {
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;  /* Força as colunas a respeitarem o tamanho da tela */
+  border-collapse: collapse !important;
+  background-color: var(--cor-cardescaixas) !important;
+  color: var(--cor-textoprincipal) !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+thead {
+  background-color: #1e293b !important;
+}
+
+th {
+  font-weight: 600 !important;
+  font-size: 11px !important;       /* Reduzido sutilmente para dar mais espaço ao texto */
+  color: var(--text-color-light) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--cor-linhas) !important;
+  padding: 12px 10px !important;
+  text-align: left !important;
+  text-overflow: ellipsis;          /* Corta o texto com '...' se for absurdamente grande */
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+td {
+  padding: 10px 10px !important;    /* Ajuste de padding para respirar melhor */
+  font-size: 12.5px !important;
+  color: var(--text-color-faded) !important;
+  border-bottom: 1px solid var(--cor-linhas) !important;
+  text-align: left !important;
+  background-color: transparent !important;
+  transition: all 0.15s ease;
+  text-overflow: ellipsis;          /* Se o nome for gigante, ele põe '...' em vez de quebrar a linha */
+  overflow: hidden;
+  white-space: nowrap;              /* Impede que o texto quebre a linha e aumente a altura do grid */
+}
+
+tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  color: var(--text-color-light) !important;
+}
+
+td:not(:first-child):hover {
+  cursor: pointer;
+}
+
+/* Customização dos elementos de controle inferiores */
+.dataTables_wrapper .dataTables_length, 
+.dataTables_wrapper .dataTables_filter, 
+.dataTables_wrapper .dataTables_info, 
+.dataTables_wrapper .dataTables_processing, 
+.dataTables_wrapper .dataTables_paginate {
+  color: var(--text-color-faded) !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+  background-color: var(--cor-fundoprincipal) !important;
+  border: 1px solid var(--cor-linhas) !important;
+  color: white !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+}
+
+/* ==========================================================================
+   ESTILIZAÇÃO DO MODAL DE ALERTA CUSTOMIZADO
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.modal-overlay.modal-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background-color: var(--cor-cardescaixas);
+  border: 1px solid var(--cor-linhas);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  transform: scale(0.95);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-overlay.modal-open .modal-content {
+  transform: scale(1);
+}
+
+.modal-icon {
+  font-size: 36px;
+  color: var(--cor-primaria);
+  margin-bottom: 16px;
+  display: inline-flex;
+  animation: pulseIcon 2s infinite;
+}
+
+@keyframes pulseIcon {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.modal-content p {
+  margin: 0 0 24px 0;
+  font-size: 15px;
+  color: var(--cor-textoprincipal);
+  line-height: 1.5;
+}
+
+.modal-btn {
+  background-color: var(--cor-primaria);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 120px;
+  height: 38px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.modal-btn:hover {
+  background-color: var(--cor-primaria-hover);
+}
+</style>

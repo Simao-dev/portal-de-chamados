@@ -1,4 +1,5 @@
 
+/** INDETIFICA QUAL O TIPO DE SOLICITAÇÃO E DESTINA A FUNÇÃO CORRESPONDENTE */
 function roteadorChamado(data) {
   if (!data || !data.qualFuncao) {
     return { status: "erro", mensagem: "Parâmetros inválidos" };
@@ -20,8 +21,14 @@ function roteadorChamado(data) {
     case "listarNomeCargo":
       return listarNomeCargo(data);
     
-    case "fazLogin":
-      return verificarUsuario(data);
+    case "lerUsuarios":
+      return lerUsuarios(data);
+    
+    case "deletarUsuarios":
+      return deletarUsuario(data);
+    
+        case "metricas":
+    return buscarChamadosPorPeriodo(data);
 
     default:
       return { status: "erro", mensagem: "Função não reconhecida." };
@@ -29,20 +36,20 @@ function roteadorChamado(data) {
 }
 /**   AREA DE CHAMADOS / CADASTRO / REQUISIÇÃO / ATUALIZAÇÃO */
 
-/**Cadastra novos chamados */
+/**CADASTRA/ALTERA novos chamados */
 function entradaDeInformacoes(data) {
   const ss = SpreadsheetApp.openById("1BFIg81PcQXN29nKRMoWpYGYygpy16WA1Xz8Z-mWMUkM");
   const main = ss.getSheetByName("main");
 
-  /**Garante cabeçalho */
+  /** Garante cabeçalho */
   if (main.getLastRow() === 0) {
-    main.appendRow(["ID", "Tipo do Chamado", "Solicitante", "Status Chamado", "Descrição", "informação Extra", "Hora", "Data"]);
+    main.appendRow(["ID", "Tipo do Chamado", "Solicitante", "Função", "Status Chamado", "Descrição", "Informação Extra", "Hora", "Data"]);
   }
 
-  const id = data.idchamado;
+  const idChamado = data.idDoChamado; 
 
-  // Novo registro
-  if (!id || id === "") {
+  /** Se não houver ID, é um novo registro. */
+  if (!idChamado || idChamado === "") {
     const ultimaLinha = main.getLastRow();
     let maiorId = 0;
 
@@ -52,54 +59,70 @@ function entradaDeInformacoes(data) {
     }
 
     const novoId = maiorId + 1;
-
-  const agora = new Date();
+    const agora = new Date();
 
     main.appendRow([
       novoId,
-    data.tipoDoChamado,
-    data.solicitante,
-    data.statusChamado,
-    data.descricao,
-    data.informacaoExtra,
-    Utilities.formatDate(agora, Session.getScriptTimeZone(), "HH:mm:ss"),
-    Utilities.formatDate(agora, Session.getScriptTimeZone(), "dd/MM/yyyy")
-]);
-
+      data.tipoDoChamado,
+      data.solicitante,
+      data.funcao,
+      data.statusChamado,
+      data.descricao,
+      data.informacaoExtra,
+      Utilities.formatDate(agora, Session.getScriptTimeZone(), "HH:mm:ss"),
+      Utilities.formatDate(agora, Session.getScriptTimeZone(), "dd/MM/yyyy")
+    ]);
     return "Chamado cadastrado com sucesso!";
-  }
 
-  /**Atualização de chamado existente */
-  const idNumero = Number(id);
-  if (!isNaN(idNumero)) {
-    for (let i = 2; i <= main.getLastRow(); i++) {
-      const idLinha = Number(main.getRange(i, 1).getValue());
-      if (idLinha === idNumero) {
-        main.getRange(i, 2).setValue(data.tipoDoChamado);
-        main.getRange(i, 3).setValue(data.solicitante);
-        main.getRange(i, 4).setValue(data.statusChamado);
-        main.getRange(i, 5).setValue(data.descricao);
-        main.getRange(i, 6).setValue(data.informacaoExtra);
-        main.getRange(i, 7).setValue(data.hora);
-        main.getRange(i, 8).setValue(data.dataChamado);
-
-
-        return "Chamado atualizado com sucesso!";
+  } else {
+    
+    /** Se houver um ID, é uma atualização. */
+    const dadosPlanilha = main.getDataRange().getValues();
+    const idNumero = Number(idChamado);
+    let linhaParaEditar;
+    
+    // Busca a linha pelo ID
+    for (let i = 0; i < dadosPlanilha.length; i++) {
+      if (Number(dadosPlanilha[i][0]) === idNumero) {
+        linhaParaEditar = i + 1;
+        break;
       }
     }
-    return "ID informado não encontrado.";
-  }
 
-  return "Erro no formulário: ID inválido.";
+    if (linhaParaEditar) {
+      
+      // Pega os dados da linha para manter os valores originais de Hora e Data
+      const linhaOriginal = main.getRange(linhaParaEditar, 1, 1, main.getLastColumn()).getValues()[0];
+
+      // Atualiza os dados que vieram do formulário
+      const novaLinhaDeDados = [
+        idNumero,
+        data.tipoDoChamado,
+        data.solicitante,
+        data.funcao,
+        data.statusChamado,
+        data.descricao,
+        data.informacaoExtra,
+        linhaOriginal[7], // Hora (coluna 8, índice 7)
+        linhaOriginal[8]  // Data (coluna 9, índice 8)
+      ];
+
+      main.getRange(linhaParaEditar, 1, 1, novaLinhaDeDados.length).setValues([novaLinhaDeDados]);
+      return "Chamado atualizado com sucesso!";
+      
+    } else {
+      return "Erro: Chamado não encontrado.";
+    }
+  }
 }
  
- /** Busca os dados do banco para exibir na tabela */
+ /** Faz a REQUISIÇÃO dos dados no banco para exibir na tabela */
 function lerChamados(data) {
   const ss = SpreadsheetApp.openById("1BFIg81PcQXN29nKRMoWpYGYygpy16WA1Xz8Z-mWMUkM");
   const main = ss.getSheetByName("main");
 
   /**converte dada e hora pra texto */
-  main.getRange("G:H").activate();
+  main.getRange("H:I").activate();
   main.getActiveRangeList().setNumberFormat("@");
   
 
@@ -115,36 +138,32 @@ function lerChamados(data) {
     id: l[0],
     tipoDoChamado: l[1],
     solicitante: l[2],
-    statusChamado: l[3],
-    descricao: l[4],
-    informacaoExtra: l[5],
-    hora: l[6],
-    data: l[7],
+    funcao: l[3],
+    statusChamado: l[4],
+    descricao: l[5],
+    informacaoExtra: l[6],
+    hora: l[7],
+    data: l[8],
     
   }));
   
 }
 
-/** AREA DE CASTRO DE USUARIOS */
+/** AREA DE CASTRO/ALTERAÇÃO/EXCLUSÃO e EXIBIÇÃO DE USUARIOS */
 
-/**Cadastra usuarios */
+/**CADASTRA/ALTERA os usuarios */
 function cadastraUsuario(data) {
   const ss = SpreadsheetApp.openById("1BFIg81PcQXN29nKRMoWpYGYygpy16WA1Xz8Z-mWMUkM");
   const main = ss.getSheetByName("users");
-  
-  /**faz a conferencia da senha e confirmeSenha */
-  if(data.senha !== data.confimeSenha){
-    return "senha não conferem";
-  }
 
-  /**Garante cabeçalho */
+  /** Garante cabeçalho */
   if (main.getLastRow() === 0) {
-    main.appendRow(["ID", "Nome", "Sobrenome", "Cargo", "Senha"]);
+    main.appendRow(["ID", "Nome", "Sobrenome", "Função", "Cargo", "Usuario", "Ramal"]);
   }
 
-  const id = data.idsenha;
+  const id = data.idUsuario; // Ou data.idUsuario, dependendo do que você envia do frontend
 
-  /**Novo registro */ 
+  /** Adiciona um novo caso id seja vazio */
   if (!id || id === "") {
     const ultimaLinha = main.getLastRow();
     let maiorId = 0;
@@ -156,96 +175,195 @@ function cadastraUsuario(data) {
 
     const novoId = maiorId + 1;
 
-
     main.appendRow([
       novoId,
-    data.nome,
-    data.sobrenome,
-    data.cargo,
-    data.senha,
-]);
+      data.nome,
+      data.sobrenome,
+      data.funcao,
+      data.cargo,
+      data.usuario,
+      data.ramal,
+    ]);
+    return "Usuário cadastrado com sucesso!";
 
-    return "Usuario criado com sucesso";
-  }
+  } else {
 
-  /**  Atualiza usuario existente */
-  const idNumero = Number(id);
-  if (!isNaN(idNumero)) {
-    for (let i = 2; i <= main.getLastRow(); i++) {
-      const idLinha = Number(main.getRange(i, 1).getValue());
-      if (idLinha === idNumero) {
-        main.getRange(i, 2).setValue(data.nome);
-        main.getRange(i, 3).setValue(data.sobrenome);
-        main.getRange(i, 4).setValue(data.cargo)
-        main.getRange(i, 5).setValue(data.senha);
-        return "Usuario atualizado com sucesso!";
+    /** Altera caso tenha ID */
+    const dados = main.getDataRange().getValues();
+    
+    // Busca a linha pelo ID
+    let linhaParaEditar;
+    for (let i = 0; i < dados.length; i++) {
+      if (dados[i][0] == id) {
+        linhaParaEditar = i + 1; // Soma 1 pois a função getRange usa índices baseados em 1
+        break;
       }
     }
-    return "ID informado não encontrado.";
-  }
 
-  return "Erro no formulário: ID inválido.";
+    if (linhaParaEditar) {
+      const novaLinha = [
+        id,
+        data.nome,
+        data.sobrenome,
+        data.funcao,
+        data.cargo,
+        data.usuario,
+        data.ramal
+      ];
+
+      // Altera os dados na planilha na linha encontrada
+      main.getRange(linhaParaEditar, 1, 1, novaLinha.length).setValues([novaLinha]);
+      
+      return "Usuário atualizado com sucesso!";
+
+    } else {
+      return "Erro: Usuário não encontrado.";
+    }
+  }
 }
 
+/** REMOVE usuario */
 
-/**
-   Obtém os nomes e cargos da planilha de usuários e os retorna como um array de objetos.
-  @returns {Array<Object>} Um array de objetos, onde cada objeto tem as propriedades 'nome' e 'cargo'.
- */
+function deletarUsuario(data) {
+  const ss = SpreadsheetApp.openById("1BFIg81PcQXN29nKRMoWpYGYygpy16WA1Xz8Z-mWMUkM");
+  const main = ss.getSheetByName("users");
+  const ultimaLinha = main.getLastRow();
+
+  if (data.idUsuario === ""){
+    return "Nenhum id encontrado"
+  }
+  for (let i = 1; i <= ultimaLinha; i++) {
+    let idLinha = main.getRange(i, 1).getValue();
+    if (data.idUsuario == idLinha) {
+      main.deleteRow(i);
+      return "Usuário deletado";
+    }
+  }
+  return "ID do usuário não encontrado na planilha";
+}
+
+/** Obtém os nomes e cargos da planilha de usuários e os retorna como um array de objetos para preencher o select solicitante.*/
 function listarNomeCargo() {
   const ss = SpreadsheetApp.openById("1BFIg81PcQXN29nKRMoWpYGYygpy16WA1Xz8Z-mWMUkM");
-  const main = ss.getSheetByName("users"); /**Acessa a aba "users"*/
-  
-  /** Obtém todos os dados da planilha */
+  const main = ss.getSheetByName("users");
+
   const dados = main.getDataRange().getValues();
-  
-  /** A primeira linha (cabeçalho) é removida para que os dados possam ser processados*/
-  const cabecalho = dados.shift(); 
-  
-  /**  Encontra os índices das colunas 'Nome' e 'Cargo'*/
+  const cabecalho = dados.shift();
   const indiceNome = cabecalho.indexOf("Nome");
-  const indiceCargo = cabecalho.indexOf("Cargo");
-  
-  /**  Retorna um array de objetos, cada um com o nome e o cargo*/
+  const indiceFuncao = cabecalho.indexOf("Função");
+
+  /** Retorna um array de strings no formato "Nome - Cargo" para o <select> */
   return dados.map(l => ({
     nome: l[indiceNome],
-    cargo: l[indiceCargo]
+    cargo: l[indiceFuncao]
   }));
 }
 
-/**function testeVerificarUsuario() {
-  const dadosTeste = {
-    nome: "pedro",   // coloque um nome que existe na aba "users"
-    senha: "pedro1030"   // coloque a senha correspondente
-  };
-
-  const resultado = verificarUsuario(dadosTeste);
-  Logger.log("Resultado do teste: " + resultado);
-}*/
-
-
-function verificarUsuario(dados) {
+/** EXIBE as infomações de usuarios na aba castro de usuarios */
+function lerUsuarios(data) {
   const ss = SpreadsheetApp.openById("1BFIg81PcQXN29nKRMoWpYGYygpy16WA1Xz8Z-mWMUkM");
   const main = ss.getSheetByName("users");
   
-  // Pega todos os dados da planilha
-  const valores = main.getDataRange().getValues(); 
+
+  const linhas = main.getDataRange().getValues();
+
+  /**Remove cabeçalho */
+  linhas.shift();
+
+  linhas.sort((a, b) => b[0] - a[0]);
+
+  // Transforma em array de objetos
+  return linhas.map(l => ({
+    id: l[0],
+    nome: l[1],
+    sobrenome: l[2],
+    funcao: l[3],
+    cargo: l[4],
+    usuario: l[5],
+    ramal: l[6],
+  }));
   
-  const nome = dados.nome;
-  const senha = dados.senha;
-  
-  let autenticado = false;
-  
-  // começa da linha 2 (índice 1) para pular cabeçalho
-  for (let i = 1; i < valores.length; i++) {
-    const nomePlanilha = valores[i][1]; // coluna 2 (B)
-    const senhaPlanilha = valores[i][4]; // coluna 5 (E)
-    
-    if (nome === nomePlanilha && senha === senhaPlanilha) {
-      autenticado = true;
-      break;
-    }
-  }
-  
-  return autenticado;
 }
+
+/** METRICAS */
+
+/** Busca e conta a quantidade de chamados em um período de tempo.*/
+/**
+ * Busca e conta chamados, identifica o maior solicitante e o total geral.
+ */
+
+function buscarChamadosPorPeriodo(dados) {
+  try {
+    const ss = SpreadsheetApp.openById("1BFIg81PcQXN29nKRMoWpYGYygpy16WA1Xz8Z-mWMUkM");
+    const planilha = ss.getSheetByName('main');
+
+    // Mapeamento das colunas para facilitar a leitura.
+    const colunas = { solicitante: 2, data: 8 }; // Coluna C é a de índice 2, e I é a 8.
+
+    // Obtém todos os valores das colunas de Solicitante e Data
+    // Usamos A:I para pegar todas as colunas até I. Se for mais eficiente, você pode pegar somente C e I.
+    const todosOsValores = planilha.getRange('A2:I').getValues();
+
+    // Filtra apenas as linhas com dados válidos na coluna de data (I)
+    const dadosValidos = todosOsValores.filter(row => row[colunas.data] !== '');
+
+    // Calcula o total geral de chamados
+    const totalGeral = dadosValidos.length;
+
+    const dataInicial = new Date(dados.dataInicial + 'T00:00:00Z');
+    const dataFinal = new Date(dados.dataFinal + 'T00:00:00Z');
+    dataFinal.setDate(dataFinal.getDate() + 1);
+
+    let contadorPeriodo = 0;
+    const contagemPorSolicitante = {};
+
+    dadosValidos.forEach(row => {
+      const nomeSolicitante = row[colunas.solicitante];
+      const dataNaCelula = row[colunas.data];
+      
+      const partes = dataNaCelula.split('/');
+      const dataDoRegistro = new Date(partes[2], partes[1] - 1, partes[0]);
+      dataDoRegistro.setHours(0, 0, 0, 0);
+
+      // Lógica principal: contagem do período e por solicitante
+      if (dataDoRegistro >= dataInicial && dataDoRegistro < dataFinal) {
+        contadorPeriodo++;
+        if (nomeSolicitante && typeof nomeSolicitante === 'string') {
+          const nomeNormalizado = nomeSolicitante.trim();
+          contagemPorSolicitante[nomeNormalizado] = (contagemPorSolicitante[nomeNormalizado] || 0) + 1;
+        }
+      }
+    });
+
+    // Encontra o solicitante mais ativo
+    let solicitanteMaisAtivo = "N/A";
+    let chamadosDoMaisAtivo = 0;
+
+    for (const solicitante in contagemPorSolicitante) {
+      if (contagemPorSolicitante[solicitante] > chamadosDoMaisAtivo) {
+        chamadosDoMaisAtivo = contagemPorSolicitante[solicitante];
+        solicitanteMaisAtivo = solicitante;
+      }
+    }
+
+    // Calcula as porcentagens
+    const porcentagemPeriodo = totalGeral > 0 ? (contadorPeriodo / totalGeral) * 100 : 0;
+    const porcentagemSolicitante = totalGeral > 0 ? (chamadosDoMaisAtivo / totalGeral) * 100 : 0;
+    
+    // Retorna todas as métricas em um único objeto
+    return {
+      total: contadorPeriodo,
+      totalGeral: totalGeral,
+      porcentagem: porcentagemPeriodo.toFixed(2),
+      solicitanteMaisAtivo: solicitanteMaisAtivo,
+      chamadosDoMaisAtivo: chamadosDoMaisAtivo,
+      porcentagemSolicitante: porcentagemSolicitante.toFixed(2),
+      periodoInicial: dados.dataInicial,
+      periodoFinal: dados.dataFinal
+    };
+
+  } catch (e) {
+      return { status: 'erro', mensagem: e.message };
+  }
+}
+
