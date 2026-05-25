@@ -34,7 +34,7 @@
       <button class="menu-navegação" data-alvo="cadastro"><i class="bi bi-person-fill"></i>Criar usuário</button>
       
       <div class="sidebar-footer">
-        simao.dev v2.0
+        simao.dev v2.1
       </div>
     </div>
     
@@ -56,13 +56,89 @@
       <div class="form-area" id="pesquisa">
         <div class="form-scrollable-container">
           <div class="section-header">
-            <h3 class="tipo">Pesquisa</h3>
-            <p class="section-subtitle">Destinada a buscar chamados com informações sobre ele exemplo numero do chamado, hora, data ou palavras na descrição do chamado.</p>
+            <h3 class="tipo">Pesquisar Chamado</h3>
+            <p class="section-subtitle">Busque por um ID para visualizar, editar ou atualizar os detalhes do ticket.</p>
           </div>
-          <div class="placeholder-view">
-            <i class="bi bi-search"></i>
-            <p>Módulo de busca avançada pronto para configuração.</p>
+
+          <div class="search-bar-container">
+            <label for="buscarIdChamado">ID do Chamado:</label>
+            <div class="search-input-wrapper">
+              <input type="number" id="buscarIdChamado" placeholder="Informe o ID do chamado..." />
+              <button type="button" class="search-icon-btn" onclick="pesquisarChamadoPorId()">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
           </div>
+
+          <form class="formulario id-search-form">
+            <div class="div_select">
+              <div class="idchamado">
+                <label for="editIdChamado">ID</label>
+                <input type="text" id="editIdChamado" disabled placeholder="---" />
+              </div>
+              
+              <div class="select-wrapper">
+                <label class="input-label-fix">Tipo do chamado</label>
+                <select id="editTipoChamado" class="butons-top" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option>Requisição</option>
+                  <option>Rotina do setor</option>
+                  <option>Incidente</option>
+                </select>
+              </div>
+              
+              <div class="select-wrapper">
+                <label class="input-label-fix">Solicitante</label>
+                <select id="editSolicitante" class="butons-top" required>
+                  <option value="" disabled selected>Selecione...</option>
+                </select>
+              </div>
+              
+              <div class="select-wrapper">
+                <label class="input-label-fix">Status</label>
+                <select id="editStatusChamado" class="butons-top" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option>Concluído</option>
+                  <option>Pendente</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="div_select extra-info-row">
+              <div class="select-wrapper">
+                <label class="input-label-fix">Função (Setor)</label>
+                <input type="text" id="editFuncaoChamado" placeholder="Função do solicitante" disabled class="input-readonly-style" />
+              </div>
+              <div class="select-wrapper">
+                <label class="input-label-fix">Data de Abertura</label>
+                <input type="text" id="editDataChamado" placeholder="--/--/----" disabled class="input-readonly-style" />
+              </div>
+              <div class="select-wrapper">
+                <label class="input-label-fix">Hora de Abertura</label>
+                <input type="text" id="editHoraChamado" placeholder="--:--:--" disabled class="input-readonly-style" />
+              </div>
+            </div>
+            
+            <div class="div_descricao desc-textarea-row">
+              <div class="textarea-group">
+                <label class="input-label-fix">Descrição do Chamado</label>
+                <textarea id="editDescricao" placeholder="Detalhamento do chamado..." rows="4"></textarea>
+              </div>
+              <div class="textarea-group">
+                <label class="input-label-fix">Informação Extra</label>
+                <textarea id="editInformacaoExtra" placeholder="Observações adicionais..." rows="4"></textarea>
+              </div>
+            </div>
+            
+            <div class="actions-row buttons-search-row">
+              <button type="button" onclick="salvarEdicaoChamado()" class="butons-bot btn-action-create">
+                <i class="bi bi-save-fill"></i> Salvar
+              </button>
+              <button type="button" onclick="limparTelaPesquisa()" class="butons-bot btn-action-list">
+                <i class="bi bi-x-circle"></i> Cancelar
+              </button>
+            </div>
+          </form>
         </div>
       </div>
       
@@ -252,6 +328,13 @@
       </div>
       <p id="customAlertMessage">Mensagem de aviso do sistema.</p>
       <button type="button" class="modal-btn" onclick="fecharModalAlerta()">Ok</button>
+    </div>
+  </div>
+
+  <div id="loadingModal" class="modal-overlay loading-overlay">
+    <div class="loader-content">
+      <div class="spinner"></div>
+      <p>Buscando informações no banco...</p>
     </div>
   </div>
 

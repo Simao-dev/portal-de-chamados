@@ -413,4 +413,151 @@ window.onload = function () {
     inicializaPainel();
 };
 
+
+/** Busca o chamado no banco */
+function pesquisarChamadoPorId() {
+  const idBusca = document.getElementById('buscarIdChamado').value;
+  
+  if (!idBusca || idBusca.trim() === "") {
+    mostrarAlerta("Por favor, informe um ID válido para pesquisar.");
+    return;
+  }
+  
+  // 1. Ativa o modal de carregamento na tela
+  mostrarLoading();
+  
+  const dados = {
+    qualFuncao: "buscarUnicoChamado",
+    idChamado: idBusca.trim()
+  };
+  
+  google.script.run
+    .withSuccessHandler(function(resposta) {
+      // 2. Desativa o modal assim que o servidor responder
+      esconderLoading();
+      
+      if (resposta.status === "erro") {
+        mostrarAlerta(resposta.mensagem);
+        limparTelaPesquisa();
+        return;
+      }
+      
+      // Popula o formulário de edição com os dados retornados
+      document.getElementById('editIdChamado').value = resposta.id;
+      document.getElementById('editTipoChamado').value = resposta.tipoDoChamado;
+      document.getElementById('editSolicitante').value = resposta.solicitante + ' - ' + resposta.funcao;
+      document.getElementById('editStatusChamado').value = resposta.statusChamado;
+      document.getElementById('editFuncaoChamado').value = resposta.funcao;
+      document.getElementById('editDataChamado').value = resposta.data;
+      document.getElementById('editHoraChamado').value = resposta.hora;
+      document.getElementById('editDescricao').value = resposta.descricao;
+      document.getElementById('editInformacaoExtra').value = resposta.informacaoExtra;
+      
+      document.querySelector('.id-search-form').classList.add('form-loaded');
+    })
+    .roteadorChamado(dados);
+}
+
+/** Salva as alterações feitas na tela de pesquisa */
+function salvarEdicaoChamado() {
+  const solicitanteSelect = document.getElementById('editSolicitante');
+  const nomefuncaoCompleto = solicitanteSelect ? solicitanteSelect.value : '';
+  const [nome, funcao] = nomefuncaoCompleto.split(' - ');
+
+  const dados = {
+    qualFuncao: "entradaDeInformacoes",
+    idDoChamado: document.getElementById('editIdChamado').value,
+    tipoDoChamado: document.getElementById('editTipoChamado').value,
+    solicitante: nome,
+    funcao: funcao,
+    statusChamado: document.getElementById('editStatusChamado').value,
+    descricao: document.getElementById('editDescricao').value,
+    informacaoExtra: document.getElementById('editInformacaoExtra').value
+  };
+
+  if (!dados.solicitante) {
+    mostrarAlerta("O campo Solicitante é obrigatório para salvar.");
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(resposta) {
+      mostrarAlerta(resposta);
+      limparTelaPesquisa();
+      // Atualiza a tabela principal de monitoramento em segundo plano se ela estiver aberta
+      lerDadosDaTabela(); 
+    })
+    .roteadorChamado(dados);
+}
+
+/** Limpa todos os campos da tela de pesquisa (Ação do botão Cancelar) */
+function limparTelaPesquisa() {
+  document.getElementById('buscarIdChamado').value = '';
+  document.getElementById('editIdChamado').value = '';
+  document.getElementById('editTipoChamado').value = '';
+  document.getElementById('editSolicitante').value = '';
+  document.getElementById('editStatusChamado').value = '';
+  document.getElementById('editFuncaoChamado').value = '';
+  document.getElementById('editDataChamado').value = '';
+  document.getElementById('editHoraChamado').value = '';
+  document.getElementById('editDescricao').value = '';
+  document.getElementById('editInformacaoExtra').value = '';
+  
+  // Bloqueia novamente o formulário deixando opaco
+  document.querySelector('.id-search-form').classList.remove('form-loaded');
+}
+
+/** Vincula o select de solicitantes da pesquisa junto com os demais na carga inicial */
+function preencherSelectSolicitantePesquisa(data) {
+  const select = document.getElementById('editSolicitante');
+  if (!select) return;
+  select.innerHTML = '<option value="" disabled selected>Selecione um solicitante...</option>';
+  
+  data.forEach(function(item) {
+    if (item.nome && item.cargo) {
+      const option = document.createElement('option');
+      option.value = item.nome + ' - ' + item.cargo; 
+      option.textContent = item.nome + ' - ' + item.cargo;
+      select.appendChild(option);
+    }
+  });
+}
+
+// Pequeno ajuste na função original para ela alimentar os dois selects de uma vez só!
+const originalPreencherSelect = preencherSelectSolicitante;
+preencherSelectSolicitante = function() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      // Alimenta o select da aba telefones
+      const selectTel = document.getElementById('solicitante');
+      if(selectTel) {
+        selectTel.innerHTML = '<option value="" disabled selected>Selecione um solicitante...</option>';
+        data.forEach(item => {
+          if (item.nome && item.cargo) {
+            const option = document.createElement('option');
+            option.value = item.nome + ' - ' + item.cargo;
+            option.textContent = item.nome + ' - ' + item.cargo;
+            selectTel.appendChild(option);
+          }
+        });
+      }
+      // Alimenta o select da nossa nova aba de pesquisa
+      preencherSelectSolicitantePesquisa(data);
+    })
+    .listarNomeCargo();
+}
+
+function mostrarLoading() {
+  const loading = document.getElementById('loadingModal');
+  if (loading) {
+    loading.classList.add('modal-open');
+  }
+}
+
+function esconderLoading() {
+  const loading = document.getElementById('loadingModal');
+  if (loading) {
+    loading.classList.remove('modal-open');
+  }
+}
 </script>

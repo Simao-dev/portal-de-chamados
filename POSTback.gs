@@ -30,6 +30,9 @@ function roteadorChamado(data) {
         case "metricas":
     return buscarChamadosPorPeriodo(data);
 
+      case "buscarUnicoChamado":
+    return buscarUnicoChamado(data);
+
     default:
       return { status: "erro", mensagem: "Função não reconhecida." };
   }
@@ -364,6 +367,46 @@ function buscarChamadosPorPeriodo(dados) {
 
   } catch (e) {
       return { status: 'erro', mensagem: e.message };
+  }
+}
+
+function buscarUnicoChamado(data) {
+  try {
+    const ss = SpreadsheetApp.openById("1BFIg81PcQXN29nKRMoWpYGYygpy16WA1Xz8Z-mWMUkM");
+    const main = ss.getSheetByName("main");
+    const dadosPlanilha = main.getDataRange().getValues();
+    
+    const idProcurado = Number(data.idChamado);
+    let linhaEncontrada = null;
+    
+    // Varre as linhas procurando o ID (Coluna 0)
+    for (let i = 1; i < dadosPlanilha.length; i++) {
+      if (Number(dadosPlanilha[i][0]) === idProcurado) {
+        linhaEncontrada = dadosPlanilha[i];
+        break;
+      }
+    }
+    
+    if (linhaEncontrada) {
+      // Retorna o objeto mapeado igualzinho ao lerChamados, mas de uma única linha
+      return {
+        status: "sucesso",
+        id: linhaEncontrada[0],
+        tipoDoChamado: linhaEncontrada[1],
+        solicitante: linhaEncontrada[2],
+        funcao: linhaEncontrada[3],
+        statusChamado: linhaEncontrada[4],
+        descricao: linhaEncontrada[5],
+        informacaoExtra: linhaEncontrada[6],
+        hora: linhaEncontrada[7],
+        data: linhaEncontrada[8]
+      };
+    } else {
+      return { status: "erro", mensagem: "Chamado #" + idProcurado + " não foi localizado no banco de dados." };
+    }
+    
+  } catch(e) {
+    return { status: "erro", mensagem: "Erro interno no servidor: " + e.message };
   }
 }
 
