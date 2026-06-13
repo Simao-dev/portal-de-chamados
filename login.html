@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tela de Login</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+  <?!= include("Style") ?>
+</head>
+
+<body>
+
+  <div class="login-card" id="app">
+
+    <div class="panel-left">
+      <h1>Olá, Bem Vindo!</h1>
+      <p>Ainda não tem conta ?</p>
+      <button class="btn-register">Registre-se</button>
+    </div>
+
+    <div class="panel-right">
+      <h2>Login</h2>
+
+      <div id="area-login">
+
+        <div class="form-group">
+          <i class="fas fa-user input-icon"></i>
+          <input id="matricula" type="text" name="matricula" class="form-control" placeholder="Usuário" required>
+        </div>
+
+        <div class="form-group">
+          <i class="fas fa-lock input-icon"></i>
+          <input id="senha" type="password" name="senha" class="form-control" placeholder="Senha" required>
+        </div>
+
+        <button type="button" onclick="entrar()" class="btn-login">Entrar</button>
+        <p style="color: var(--cor-fundoprincipal);" id="mensagem"></p>
+
+      </div>
+    </div>
+
+  </div>
+
+
+  <?!= include("JavaScript") ?>
+</body>
+
+</html>

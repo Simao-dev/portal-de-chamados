@@ -1,162 +1,566 @@
 <script>
+  /** Variáveis globais para gerenciar o estado da sessão do usuário logado */ 
+  let nomeUsuarioLogado = "";
+  let funcaoUsuarioLogado = "";
+  let nivelUsuarioLogado = "";
 
-/** NAVEGAÇÃO ENTRE MENUS */
-const botoes = document.querySelectorAll(".menu-navegação");
-const telasFuncoes = document.querySelectorAll(".form-area");
+  /**FUNÇÃO DE AUTENTICAÇÃO E LOGIN */
 
-botoes.forEach(botao => {
-  botao.addEventListener("click", () => {
-    telasFuncoes.forEach(conteudo => {
-      conteudo.classList.remove("conteudo-ativo");
+  function entrar() {
+    var mat = document.getElementById("matricula").value;
+    var sen = document.getElementById("senha").value;
+    var msg = document.getElementById("mensagem");
+
+    if (!mat || !sen) {
+      if (msg) msg.innerText = "Preencha todos os campos.";
+      return;
+    }
+
+    if (msg) msg.innerText = "Autenticando...";
+
+    google.script.run
+      .withSuccessHandler(function(respostaPerfil) {
+
+        /** Trata o retorno como objeto estruturado conforme o post.gs devolve */
+        if (respostaPerfil && respostaPerfil.nivel) {
+          if (msg) msg.innerText = "Login aprovado! Carregando sistema...";
+          
+          nivelUsuarioLogado = String(respostaPerfil.nivel).toLowerCase().trim();
+          nomeUsuarioLogado = respostaPerfil.nomeCompleto;
+          funcaoUsuarioLogado = respostaPerfil.funcao;
+          
+          google.script.run
+            .withSuccessHandler(function(htmlSistema) {
+              document.body.innerHTML = htmlSistema;
+              
+              /** Executa a inicialização de forma segura isolando os blocos por try/catch */ 
+              setTimeout(function() {
+                try { configurarPermissoes(nivelUsuarioLogado); } catch(e) { console.error("Erro Permissoes:", e); }
+                try { configurarNavegacao(); } catch(e) { console.error("Erro Navegacao:", e); }
+                
+                /** Inicializações de tabelas puros com base nas permissões de escopo */ 
+                try { lerDadosDaTabela(); } catch(e) { console.error("Erro Tabela Geral:", e); }
+                try { lerDadosDosUsuarios(); } catch(e) { console.error("Erro Tabela Users:", e); }
+                try { preencherSelectSolicitante(); } catch(e) { console.error("Erro Select Solicitantes:", e); }
+                try { inicializaPainel(); } catch(e) { console.error("Erro Painel Metricas:", e); }
+                try { atualizarBadgeNotificacao(); } catch(e) { console.error("Erro Badge:", e); }
+                try { lerDadosDasTarefas(); } catch(e) { console.error("Erro Módulo Tarefas:", e); }
+                
+                /** INCLUSÃO DA ABA DE CHAMADOS (PORTAL DO CLIENTE) */
+                try { lerChamadosDoClienteLogado(); } catch(e) { console.error("Erro Histórico Cliente:", e); }
+                
+                setInterval(function() {
+                  try { atualizarBadgeNotificacao(); } catch(e) {}
+                }, 10000);
+              }, 150);
+            })
+            .carregarPaginaSistema();
+            
+        } else {
+          if (msg) msg.innerText = "Usuário ou senha inválidos.";
+        }
+      })
+      .withFailureHandler(function(erro) {
+        if (msg) msg.innerText = "Erro: " + erro.message;
+      })
+      .roteadorChamado({
+        qualFuncao: "autenticarUsuario", 
+        matricula: mat, 
+        senha: sen
+      });
+  }
+
+  /** NAVEGAÇÃO ENTRE MENUS - DIRECIONAMENTO EXCLUSIVO BASEADO NA PERMISSÃO */ 
+  function configurarNavegacao() {
+    const botoes = document.querySelectorAll(".menu-navegação");
+    const telasFuncoes = document.querySelectorAll(".form-area");
+
+    botoes.forEach(botao => {
+      botao.addEventListener("click", function() {
+        telasFuncoes.forEach(conteudo => {
+          conteudo.classList.remove("conteudo-ativo");
+        });
+        botoes.forEach(b => b.classList.remove("active-nav"));
+
+        const alvo = this.dataset.alvo;
+        const conteudoParaMostrar = document.getElementById(alvo);
+
+        if (conteudoParaMostrar) {
+          conteudoParaMostrar.classList.add("conteudo-ativo");
+          this.classList.add("active-nav");
+        }
+      });
     });
+
+    /**  Redirecionamento forçado de inicialização se for cliente */
+    let alvoPadrao = 'metricas';
+    if (nivelUsuarioLogado === 'cliente') {
+      alvoPadrao = 'chamados';
+    }
+
+    const abaPadrao = document.getElementById(alvoPadrao);
+    const btnPadrao = document.querySelector(`[data-alvo="${alvoPadrao}"]`);
     
-    botoes.forEach(b => b.classList.remove("active-nav"));
+    if (abaPadrao && btnPadrao) {
+      telasFuncoes.forEach(c => {
+        if (c.classList.contains('form-area')) {
+          c.classList.remove("conteudo-ativo");
+        }
+      });
+      botoes.forEach(b => b.classList.remove("active-nav"));
+      
+      abaPadrao.classList.add('conteudo-ativo');
+      btnPadrao.classList.add('active-nav');
+    }
+  }
 
-    const alvo = botao.dataset.alvo;
-    const conteudoParaMostrar = document.getElementById(alvo);
+  /** FUNÇÃO DE HISTÓRICO E REQUISIÇÃO (PORTAL DO CLIENTE)*/
+  
+  /**FUNÇÃO PARA ABRIR O MODAL DE NOVO CHAMADO*/
 
-    if (conteudoParaMostrar) {
-      conteudoParaMostrar.classList.add("conteudo-ativo");
-      botao.classList.add("active-nav");
+  function abrirModalNovoChamado() {
+    try {
+      const form = document.getElementById("formNovoChamado"); 
+      if (form) form.reset();
+      
+      /**  Localiza o campo de texto do modal e injeta o nome de quem está logado */
+      const inputNome = document.getElementById("ncUsuarioLogado");
+      if (inputNome) {
+        inputNome.value = nomeUsuarioLogado || "Usuário Conectado";
+      }
+      
+      const modal = document.getElementById("novoChamadoModal");
+      if (modal) { 
+        modal.style.display = "flex"; 
+        modal.classList.add("modal-open"); 
+      }
+    } catch(e) { 
+      console.error("Erro ao abrir o modal de chamado do cliente:", e); 
+    }
+  }
+
+  /** FUNÇÃO PARA SALVAR O CHAMADO VINDO DO PORTAL */
+  function salvarNovoChamado() {
+    const descricaoText = document.getElementById("ncDescricao").value.trim();
+    if (!descricaoText) { 
+      mostrarAlerta("Por favor, descreva o que deseja no seu chamado."); 
+      return; 
     }
     
-    // Força o recálculo de colunas do DataTables ao trocar de aba para evitar bugs de tamanho
-    setTimeout(() => {
-      $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
-    }, 50);
-  });
-});
-
-/** Mostrar o primeiro menu ao carregar a página */
-document.getElementById('metricas').classList.add('conteudo-ativo');
-document.querySelector('[data-alvo="metricas"]').classList.add('active-nav');
-
-
-/** ABA METRICAS */
-flatpickr("#data-inicial", {
-  mode: "range",
-  dateFormat: "d/m/Y"
-});
-
-function inicializaPainel() {
-  const hoje = new Date();
-  const ano = hoje.getFullYear();
-  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-  const dia = String(hoje.getDate()).padStart(2, '0');
-  
-  const dataPadrao = `${ano}-${mes}-${dia}`;
-  
-  const dados = {
-    qualFuncao: "metricas",
-    dataInicial: dataPadrao,
-    dataFinal: dataPadrao
-  };
-
-  google.script.run
-    .withSuccessHandler(exibeMetricas) 
-    .roteadorChamado(dados);
-}
-
-function exibeMetricas(resposta) {
-  const elementoTotal = document.getElementById("total-chamados");
-  const elementoPeriodo = document.getElementById("periodo-selecionado");
-  const elementoPorcentagem = document.getElementById("porcentagem-chamados");
-  const progressRingBarTotal = document.querySelector(".card1:nth-child(1) .progress-ring-bar");
-
-  elementoTotal.textContent = resposta.total;
-  const dataInicialFormatada = formataDataParaExibicao(resposta.periodoInicial);
-  const dataFinalFormatada = formataDataParaExibicao(resposta.periodoFinal);
-  elementoPeriodo.textContent = `${dataInicialFormatada} a ${dataFinalFormatada}`;
-  
-  const porcentagemTotal = parseFloat(resposta.porcentagem);
-  elementoPorcentagem.textContent = `${porcentagemTotal}%`;
-  progressRingBarTotal.style.setProperty('--percentage-total', porcentagemTotal);
-
-  const elementoNomeSolicitante = document.getElementById("nome-solicitante");
-  const elementoChamadosSolicitante = document.getElementById("chamados-solicitante");
-  const elementoPorcentagemSolicitante = document.getElementById("porcentagem-solicitante");
-  const progressRingBarSolicitante = document.querySelector(".card1:nth-child(2) .progress-ring-bar-solicitante");
-
-  if (resposta.solicitanteMaisAtivo && resposta.chamadosDoMaisAtivo > 0) {
-    elementoNomeSolicitante.textContent = resposta.solicitanteMaisAtivo;
-    elementoChamadosSolicitante.textContent = `${resposta.chamadosDoMaisAtivo} chamados`;
+    mostrarLoading();
     
-    const porcentagemDoSolicitante = parseFloat(resposta.porcentagemSolicitante);
-    elementoPorcentagemSolicitante.textContent = `${porcentagemDoSolicitante}%`;
-    progressRingBarSolicitante.style.setProperty('--percentage-solicitante', porcentagemDoSolicitante);
-  } else {
-    elementoNomeSolicitante.textContent = "N/A";
-    elementoChamadosSolicitante.textContent = "Nenhum chamado no período";
-    elementoPorcentagemSolicitante.textContent = "0%";
-    progressRingBarSolicitante.style.setProperty('--percentage-solicitante', 0);
-  }
-  
-  const elementoNomeTipo = document.getElementById("nome-tipo");
-  const elementoChamadosDoTipo = document.getElementById("chamados-do-tipo");
-  const elementoPorcentagemTipo = document.getElementById("porcentagem-tipo");
-  const progressRingBarTipo = document.querySelector(".card1:nth-child(3) .progress-ring-bar-tipo");
-
-  if (resposta.tipoMaisAtivo && resposta.chamadosDoTipoMaisAtivo > 0) {
-    elementoNomeTipo.textContent = resposta.tipoMaisAtivo;
-    elementoChamadosDoTipo.textContent = `${resposta.chamadosDoTipoMaisAtivo} chamados`;
-    
-    const porcentagemDoTipo = parseFloat(resposta.porcentagemTipo);
-    elementoPorcentagemTipo.textContent = `${porcentagemDoTipo}%`;
-    progressRingBarTipo.style.setProperty('--percentage-tipo', porcentagemDoTipo);
-  } else {
-    elementoNomeTipo.textContent = "N/A";
-    elementoChamadosDoTipo.textContent = "Nenhum chamado no período";
-    elementoPorcentagemTipo.textContent = "0%";
-    progressRingBarTipo.style.setProperty('--percentage-tipo', 0);
-  }
-}
-
-function formataDataParaExibicao(dataString) {
-  const partes = dataString.split("-");
-  return `${partes[2]}/${partes[1]}/${partes[0]}`;
-}
-
-function enviaDatas() {
-    const dataInicialInput = document.getElementById("data-inicial").value;
-
-    if (!dataInicialInput) {
-        mostrarAlerta("Por favor, selecione um intervalo de datas.");
-        return;
-    }
-    
-    const datasArray = dataInicialInput.split(" to ");
-    const dataInicialFormatada = converteData(datasArray[0]);
-    const dataFinalFormatada = converteData(datasArray[1]);
-
+    /** Monta o objeto estruturado respeitando as colunas da aba 'main' */ 
     const dados = {
-        qualFuncao: "metricas",
-        dataInicial: dataInicialFormatada,
-        dataFinal: dataFinalFormatada
+      qualFuncao: "entradaDeInformacoes", 
+      idDoChamado: "", 
+      tipoDoChamado: "Requisição",
+      solicitante: nomeUsuarioLogado,
+      funcao: funcaoUsuarioLogado, 
+      statusChamado: "Pendente",
+      descricao: descricaoText, 
+      informacaoExtra: "chamado aberto via portal"
     };
 
     google.script.run
-        .withSuccessHandler(exibeMetricas) 
-        .roteadorChamado(dados);
-}
+      .withSuccessHandler(function(resposta) { 
+        esconderLoading(); 
+        fecharModalNovoChamado(); 
+        mostrarAlerta("Sucesso: Seu chamado foi registrado e enviado para análise técnica."); 
+        
+        /** Atualiza os seletores de forma segura */ 
+        try { lerDadosDaTabela(); } catch(e){} 
+        try { atualizarBadgeNotificacao(); } catch(e){} 
+        try { lerChamadosDoClienteLogado(); } catch(e){} 
+      })
+      .withFailureHandler(function(err) { 
+        esconderLoading(); 
+        mostrarAlerta("Erro ao registrar chamado: " + err.message); 
+      })
+      .roteadorChamado(dados);
+  }
 
-function converteData(dataValor) {
+  /** FUNÇÃO FECHA MODAL NOVO CHAMADO CLIENTE */
+
+  function fecharModalNovoChamado() {
+    try {
+      const modal = document.getElementById("novoChamadoModal");
+      if (modal) { 
+        modal.style.display = "none"; 
+        modal.classList.remove("modal-open"); 
+      }
+    } catch(e) {
+      console.error("Erro ao fechar modal de chamados:", e);
+    }
+  }
+
+  /** FUNÇÃO QUE LÊ E FILTRA OS CHAMADOS EXCLUSIVOS DO CLIENTE LOGADO */ 
+  function lerChamadosDoClienteLogado() {
+    const tbody = document.getElementById("tabela-chamados-cliente-body"); 
+    if (!tbody) return; 
+
+    google.script.run
+      .withSuccessHandler(function(todosOsChamados) {
+        if (!Array.isArray(todosOsChamados)) return;
+        
+        /** Compara o solicitante da planilha com o nome do usuário logado na sessão */ 
+        const chamadosFiltrados = todosOsChamados.filter(function(chamado) {
+          let solicitanteChamado = chamado.solicitante ? String(chamado.solicitante).trim().toLowerCase() : "";
+          let usuarioLogadoLimpo = nomeUsuarioLogado ? String(nomeUsuarioLogado).trim().toLowerCase() : "";
+          return solicitanteChamado === usuarioLogadoLimpo;
+        });
+
+        /**Deixa os chamados "Pendentes" no topo, e os mais recentes primeiro */ 
+        chamadosFiltrados.sort((a, b) => {
+          if (a.statusChamado === "Pendente" && b.statusChamado !== "Pendente") return -1;
+          if (a.statusChamado !== "Pendente" && b.statusChamado === "Pendente") return 1;
+          return Number(b.id) - Number(a.id);
+        });
+
+        /** Envia os dados filtrados e organizados para construir as linhas na tela */
+        preencherTabelaCliente(chamadosFiltrados);
+      })
+      .withFailureHandler(function(err) {
+        console.error("Erro ao puxar registros do cliente:", err);
+      })
+      .roteadorChamado({ qualFuncao: "lerChamados" });
+  }
+
+  /** FUNÇÃO AUXILIAR QUE RENDERIZA AS LINHAS DO CLIENTE COM OS ESTILOS DO SISTEMA */
+  function preencherTabelaCliente(dados) {
+    const tbody = document.getElementById("tabela-chamados-cliente-body"); 
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (dados.length === 0) { 
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color:var(--text-color-faded);">Você ainda não possui nenhum chamado registrado.</td></tr>`; 
+      return; 
+    }
+
+    dados.forEach(item => {
+      const tr = document.createElement("tr"); 
+      tr.style.borderBottom = "1px solid var(--cor-linhas)";
+      
+      let corBg = item.statusChamado === 'Concluído' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+      let corTexto = item.statusChamado === 'Concluído' ? 'var(--cor-acaopositiva)' : 'var(--cor-pendente)';
+
+      tr.innerHTML = `
+        <td style="padding: 12px 16px; font-family: monospace; color: var(--cor-primaria); font-weight:600;">#${item.id}</td>
+        <td style="padding: 12px 16px;">${item.tipoDoChamado || "Requisição"}</td>
+        <td style="padding: 12px 16px; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.descricao || ''}">${item.descricao || ""}</td>
+        <td style="padding: 12px 16px;">${item.data || ""}</td>
+        <td style="padding: 12px 16px;">${item.hora || ""}</td>
+        <td style="padding: 12px 16px;">
+          <span style="padding: 3px 8px; border-radius: 4px; font-size:11px; font-weight:600; background-color:${corBg}; color:${corTexto};">
+            ${item.statusChamado || "Pendente"}
+          </span>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  /** RESTRICAO TOTAL DE ACESSO DO PORTAL DO CLIENTE */ 
+  function configurarPermissoes(nivel) {
+    const botoesMenu = document.querySelectorAll(".menu-navegação");
+    const areasConteudo = document.querySelectorAll(".form-area");
+    const nivelAcesso = String(nivel).toLowerCase().trim();
+
+    botoesMenu.forEach(btn => btn.style.display = '');
+
+    if (nivelAcesso === 'cliente') {
+      /** Oculta completamente botões restritos do painel lateral */ 
+      botoesMenu.forEach(btn => {
+        if (btn.dataset.alvo !== 'chamados') {
+          btn.style.setProperty('display', 'none', 'important');
+        }
+      });
+
+      /** Remove o foco visual de qualquer outra aba administrativa ativa em background */ 
+      areasConteudo.forEach(aba => {
+        if (aba.id !== 'chamados') {
+          aba.classList.remove("conteudo-ativo");
+        }
+      });
+    }
+  
+    if (document.getElementById('displayNivel')) {
+      document.getElementById('displayNivel').innerText = nivelAcesso.toUpperCase();
+    }
+  }
+
+  /**FUNÇÃO RESPOSAVEL POR FAZER O LOGOUT DO USUARIO */
+  function fazerLogout() {
+    var url = 'https://script.google.com/macros/s/AKfycbzpvi0bv16fmhB2dyL9lDJMNIpVhkZ7nhBZRxHENhKhDD2KLM8bZiYiqMTnyINIc4AM/exec';
+    window.top.location.href = url;
+  }
+
+  /** MÓDULO DE MÉTRICAS */
+  function inicializaPainel() {
+    const inputData = document.getElementById("data-inicial");
+    if (!inputData) return;
+
+    flatpickr("#data-inicial", {
+      mode: "range",
+      dateFormat: "d/m/Y"
+    });
+
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    const dataPadrao = `${ano}-${mes}-${dia}`;
+    
+    const dados = {
+      qualFuncao: "metricas",
+      dataInicial: dataPadrao,
+      dataFinal: dataPadrao
+    };
+
+    if (document.getElementById("total-chamados")) document.getElementById("total-chamados").textContent = "...";
+    if (document.getElementById("nome-solicitante")) document.getElementById("nome-solicitante").textContent = "...";
+    if (document.getElementById("nome-tipo")) document.getElementById("nome-tipo").textContent = "...";
+
+    google.script.run.withSuccessHandler(exibeMetricas).roteadorChamado(dados);
+  }
+
+  /** FUNÇÃO QUE ATUALIZA METRICAS DO PAINEL DE METRICAS */
+  function exibeMetricas(resposta) {
+    if (resposta && resposta.status === "erro") {
+      mostrarAlerta(resposta.mensagem);
+      return;
+    }
+
+    const elementoTotal = document.getElementById("total-chamados");
+    if (!elementoTotal) return;
+
+    const elementoPeriodo = document.getElementById("periodo-selecionado");
+    const elementoPorcentagem = document.getElementById("porcentagem-chamados");
+    const progressRingBarTotal = document.querySelector(".card1:nth-child(1) .progress-ring-bar");
+
+    elementoTotal.textContent = resposta.total !== undefined ? resposta.total : 0;
+    
+    const dataInicialFormatada = formataDataParaExibicao(resposta.periodoInicial);
+    const dataFinalFormatada = formataDataParaExibicao(resposta.periodoFinal);
+    if (elementoPeriodo) elementoPeriodo.textContent = `${dataInicialFormatada} a ${dataFinalFormatada}`;
+    
+    const porcentagemTotal = parseFloat(resposta.porcentagem) || 0;
+    if (elementoPorcentagem) elementoPorcentagem.textContent = `${porcentagemTotal.toFixed(1)}%`;
+    if (progressRingBarTotal) progressRingBarTotal.style.setProperty('--percentage-total', porcentagemTotal);
+
+    const elementoNomeSolicitante = document.getElementById("nome-solicitante");
+    const elementoChamadosSolicitante = document.getElementById("chamados-solicitante");
+    const elementoPorcentagemSolicitante = document.getElementById("porcentagem-solicitante");
+    const progressRingBarSolicitante = document.querySelector(".card1:nth-child(2) .progress-ring-bar-solicitante");
+
+    if (resposta.solicitanteMaisAtivo && resposta.chamadosDoMaisAtivo > 0) {
+      if (elementoNomeSolicitante) elementoNomeSolicitante.textContent = resposta.solicitanteMaisAtivo;
+      if (elementoChamadosSolicitante) elementoChamadosSolicitante.textContent = `${resposta.chamadosDoMaisAtivo} chamado(s)`;
+      
+      const porcentagemDoSolicitante = parseFloat(resposta.porcentagemSolicitante) || 0;
+      if (elementoPorcentagemSolicitante) elementoPorcentagemSolicitante.textContent = `${porcentagemDoSolicitante.toFixed(1)}%`;
+      if (progressRingBarSolicitante) progressRingBarSolicitante.style.setProperty('--percentage-solicitante', porcentagemDoSolicitante);
+    } else {
+      if (elementoNomeSolicitante) elementoNomeSolicitante.textContent = "N/A";
+      if (elementoChamadosSolicitante) elementoChamadosSolicitante.textContent = "Nenhum chamado";
+      if (elementoPorcentagemSolicitante) elementoPorcentagemSolicitante.textContent = "0%";
+      if (progressRingBarSolicitante) progressRingBarSolicitante.style.setProperty('--percentage-solicitante', 0);
+    }
+    
+    const elementoNomeTipo = document.getElementById("nome-tipo");
+    const elementoChamadosDoTipo = document.getElementById("chamados-do-tipo");
+    const elementoPorcentagemTipo = document.getElementById("porcentagem-tipo");
+    const progressRingBarTipo = document.querySelector(".card1:nth-child(3) .progress-ring-bar-tipo");
+
+    if (resposta.tipoMaisAtivo && resposta.chamadosDoTipoMaisAtivo > 0) {
+      if (elementoNomeTipo) elementoNomeTipo.textContent = resposta.tipoMaisAtivo;
+      if (elementoChamadosDoTipo) elementoChamadosDoTipo.textContent = `${resposta.chamadosDoTipoMaisAtivo} chamado(s)`;
+      
+      const porcentagemDoTipo = parseFloat(resposta.porcentagemTipo) || 0;
+      if (elementoPorcentagemTipo) elementoPorcentagemTipo.textContent = `${porcentagemDoTipo.toFixed(1)}%`;
+      if (progressRingBarTipo) progressRingBarTipo.style.setProperty('--percentage-tipo', porcentagemDoTipo);
+    } else {
+      if (elementoNomeTipo) elementoNomeTipo.textContent = "N/A";
+      if (elementoChamadosDoTipo) elementoChamadosDoTipo.textContent = "Nenhum chamado";
+      if (elementoPorcentagemTipo) elementoPorcentagemTipo.textContent = "0%";
+      if (progressRingBarTipo) progressRingBarTipo.style.setProperty('--percentage-tipo', 0);
+    }
+  }
+
+  /** FUNÇÃO QUE FORMATA A DATA PRA EXIBIÇÃO */
+  function formataDataParaExibicao(dataString) {
+    if(!dataString || !dataString.includes("-")) return "---";
+    const partes = dataString.split("-");
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  }
+
+  /** FUNÇÃO ENVIA DATAS */
+  function enviaDatas() {
+    const dataInicialInput = document.getElementById("data-inicial").value;
+    if (!dataInicialInput) { mostrarAlerta("Por favor, selecione um intervalo de datas."); return; }
+    
+    const delimitador = dataInicialInput.includes(" to ") ? " to " : " a ";
+    const datasArray = dataInicialInput.split(delimitador);
+    const dataInicialFormatada = converteData(datasArray[0]);
+    const dataFinalFormatada = datasArray[1] ? converteData(datasArray[1]) : dataInicialFormatada;
+
+    mostrarLoading();
+    google.script.run
+        .withSuccessHandler(function(resposta) { esconderLoading(); exibeMetricas(resposta); }) 
+        .roteadorChamado({ qualFuncao: "metricas", dataInicial: dataInicialFormatada, dataFinal: dataFinalFormatada });
+  }
+
+  function converteData(dataValor) {
     const partes = dataValor.trim().split("/");
     return `${partes[2]}-${partes[1]}-${partes[0]}`;
-}
+  }
 
+  /** MÓDULO DE INTERAÇÃO DA TELA DE PESQUISA (ADMIN) */
+  function pesquisarChamadoPorId() {
+    const inputBusca = document.getElementById('buscarIdChamado');
+    const idBusca = inputBusca ? inputBusca.value.trim() : "";
+    
+    if (!idBusca) {
+      mostrarAlerta("Por favor, informe um ID válido para pesquisar.");
+      return;
+    }
+    
+    mostrarLoading();
+    
+    google.script.run
+      .withSuccessHandler(function(resposta) {
+        esconderLoading();
+        
+        if (resposta.status === "erro") {
+          mostrarAlerta(resposta.mensagem);
+          limparTelaPesquisa();
+          return;
+        }
+        
+        /** Alimenta os campos de texto comuns com os dados do servidor */ 
+        document.getElementById('editIdChamado').value = resposta.id || "";
+        document.getElementById('editTipoChamado').value = resposta.tipoDoChamado || "";
+        document.getElementById('editStatusChamado').value = resposta.statusChamado || "";
+        document.getElementById('editFuncaoChamado').value = resposta.funcao || "";
+        document.getElementById('editDataChamado').value = resposta.data || "";
+        document.getElementById('editHoraChamado').value = resposta.hora || "";
+        document.getElementById('editDescricao').value = resposta.descricao || "";
+        document.getElementById('editInformacaoExtra').value = resposta.informacaoExtra || "";
+        
+        /** Reconstrói a chave combinada para o seletor de Solicitante*/
+        let solicitanteLimpo = resposta.solicitante ? String(resposta.solicitante).trim() : "";
+        let funcaoLimpa = resposta.funcao ? String(resposta.funcao).trim() : "";
+        const selectPesquisa = document.getElementById('editSolicitante');
+        
+        if (selectPesquisa) {
+          if (solicitanteLimpo && funcaoLimpa && !solicitanteLimpo.includes(" - ")) {
+            let valorChave = solicitanteLimpo + ' - ' + funcaoLimpa;
+            selectPesquisa.value = valorChave;
+            
+            if (selectPesquisa.value !== valorChave) {
+              let optNova = document.createElement('option');
+              optNova.value = valorChave; 
+              optNova.textContent = valorChave;
+              selectPesquisa.appendChild(optNova);
+              selectPesquisa.value = valorChave;
+            }
+          } else {
+            selectPesquisa.value = solicitanteLimpo;
+          }
+        }
+        
+        /**  Remove o 'disabled' de todos os campos editáveis*/
+        const camposParaDestravar = [
+          'editTipoChamado', 
+          'editStatusChamado', 
+          'editSolicitante', 
+          'editDescricao', 
+          'editInformacaoExtra'
+        ];
+        
+        camposParaDestravar.forEach(idCampo => {
+          const elemento = document.getElementById(idCampo);
+          if (elemento) elemento.disabled = false; 
+        });
+        
+        const formPesquisa = document.querySelector('.id-search-form');
+        if (formPesquisa) formPesquisa.classList.add('form-loaded');
+      })
+      .withFailureHandler(function(erro) {
+         esconderLoading();
+         mostrarAlerta("Falha de comunicação: " + erro.message);
+         limparTelaPesquisa();
+      })
+      .roteadorChamado({ 
+        qualFuncao: "buscarUnicoChamado", 
+        idChamado: idBusca 
+      });
+  }
 
-/** ABA DE CADASTRO DE CHAMADOS*/
-function limparFormularioChamado() {
-    document.getElementById('idDoChamado').value = '';
-    document.getElementById('tipoDoChamado').value = '';
-    document.getElementById('solicitante').value = '';
-    document.getElementById('statusChamado').value = '';
-    document.getElementById('descricao').value = '';
-    document.getElementById('informacaoExtra').value = '';
-    document.getElementById('botaochamado').innerHTML = '<i class="bi bi-plus-circle-fill"></i> Registrar Chamado';
-}
+  /** FUNÇÃO QUE ENVIA CHAMADOS EDITADOS */
 
-function enviaAoClicar() {
+  function salvarEdicaoChamado() {
+    const solicitanteSelect = document.getElementById('editSolicitante');
+    const nomefuncaoCompleto = solicitanteSelect ? solicitanteSelect.value : '';
+    const [nome, funcao] = nomefuncaoCompleto.split(' - ');
+
+    const dados = {
+      qualFuncao: "entradaDeInformacoes",
+      idDoChamado: document.getElementById('editIdChamado').value,
+      tipoDoChamado: document.getElementById('editTipoChamado').value,
+      solicitante: nome, funcao: funcao,
+      statusChamado: document.getElementById('editStatusChamado').value,
+      descricao: document.getElementById('editDescricao').value,
+      informacaoExtra: document.getElementById('editInformacaoExtra').value
+    };
+
+    if (!dados.solicitante) { mostrarAlerta("O campo Solicitante é obrigatório para salvar."); return; }
+
+    google.script.run
+      .withSuccessHandler(function(resposta) { mostrarAlerta(resposta); limparTelaPesquisa(); lerDadosDaTabela(); atualizarBadgeNotificacao(); })
+      .roteadorChamado(dados);
+  }
+
+  /** FUNÇÃO QUE LIMPA TELAS DE PESQUISA */
+  function limparTelaPesquisa() {
+    const campos = [
+      'buscarIdChamado', 'editIdChamado', 'editTipoChamado', 'editSolicitante',
+      'editStatusChamado', 'editFuncaoChamado', 'editDataChamado', 
+      'editHoraChamado', 'editDescricao', 'editInformacaoExtra'
+    ];
+    
+    campos.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    
+    /** Bloqueia novamente os campos para o estado padrão de segurança (disabled)*/ 
+    const camposParaBloquear = [
+      'editTipoChamado', 'editStatusChamado', 'editSolicitante', 
+      'editDescricao', 'editInformacaoExtra'
+    ];
+    
+    camposParaBloquear.forEach(idCampo => {
+      const elemento = document.getElementById(idCampo);
+      if (elemento) elemento.disabled = true;
+    });
+
+    const form = document.querySelector('.id-search-form');
+    if (form) form.classList.remove('form-loaded');
+  }
+
+  /** FUNÇÃO DE LIMPEZA DOS FORMULARIOS DE CHAMADOS VIA TELEFONE */
+  function limparFormularioChamado() {
+    if(document.getElementById('idDoChamado')) document.getElementById('idDoChamado').value = '';
+    if(document.getElementById('tipoDoChamado')) document.getElementById('tipoDoChamado').value = '';
+    if(document.getElementById('solicitante')) document.getElementById('solicitante').value = '';
+    if(document.getElementById('statusChamado')) document.getElementById('statusChamado').value = '';
+    if(document.getElementById('descricao')) document.getElementById('descricao').value = '';
+    if(document.getElementById('informacaoExtra')) document.getElementById('informacaoExtra').value = '';
+    if(document.getElementById('botaochamado')) document.getElementById('botaochamado').innerHTML = '<i class="bi bi-plus-circle-fill"></i> Registrar Chamado';
+  }
+
+  /** FUNÇÃO DE CADASTRO DE CHAMADOS VIA TELEFONE */
+  function enviaAoClicar() {
     const solicitanteSelect = document.getElementById('solicitante');
     const nomefuncaoCompleto = solicitanteSelect ? solicitanteSelect.value : '';
     const [nome, funcao] = nomefuncaoCompleto.split(' - ');
@@ -165,399 +569,493 @@ function enviaAoClicar() {
         qualFuncao: "entradaDeInformacoes",
         idDoChamado: document.getElementById('idDoChamado').value,
         tipoDoChamado: document.getElementById('tipoDoChamado').value,
-        solicitante: nome,
-        funcao: funcao,
+        solicitante: nome, funcao: funcao,
         statusChamado: document.getElementById('statusChamado').value,
         descricao: document.getElementById('descricao').value,
         informacaoExtra: document.getElementById('informacaoExtra').value
     };
 
-    if (!dados.solicitante) {
-        mostrarAlerta("Preencha o campo Solicitante, ele é obrigatório.");
-        return;
-    }
+    if (!dados.solicitante) { mostrarAlerta("Preencha o campo Solicitante, ele é obrigatório."); return; }
 
     google.script.run
-        .withSuccessHandler(function(resposta) {
-            mostrarAlerta(resposta);
-            limparFormularioChamado();
-            lerDadosDaTabela();
-        })
-      .roteadorChamado(dados);
-}
-  
-function lerDadosDaTabela() {
-    const dados = { qualFuncao: "lerChamados" };
+        .withSuccessHandler(function(resposta) { mostrarAlerta(resposta); limparFormularioChamado(); lerDadosDaTabela(); atualizarBadgeNotificacao(); })
+        .roteadorChamado(dados);
+  }
+
+  /** FUNÇÃO QUE LER OS DADOS DA TABELA CHAMADOS */  
+  function lerDadosDaTabela() {
+    if (!document.getElementById("tabela-chamados-body")) return;
     google.script.run
-    .withSuccessHandler(function (resposta) {
-      preencherTabela(resposta);
-    })
-    .roteadorChamado(dados);
-}
-
-function preencherTabela(dados) {
-  if (!Array.isArray(dados) || dados.length === 0) {
-    console.warn('Nenhum dado para exibir');
-    return;
-  }
-
-  if ($.fn.DataTable.isDataTable('#tabela')) {
-    $('#tabela').DataTable().clear().destroy();
-  }
-
-  $('#tabela tbody').empty();
-
-  $('#tabela').DataTable({
-    data: dados,
-    autoWidth: false, /* Desativa o cálculo automático de largura do plugin */
-    columns: [
-      { title: "ID", data: "id", width: "7%" },
-      { title: "Tipo do chamado", data: "tipoDoChamado", width: "13%" },
-      { title: "Solicitante", data: "solicitante", width: "15%" },
-      { title: "Função", data: "funcao", width: "10%" }, 
-      { title: "Descrição", data: "descricao", width: "25%" },
-      { title: "Informação Extra", data: "informacaoExtra", width: "15%" },
-      { title: "Hora", data: "hora", width: "5%" },
-      { title: "Data", data: "data", width: "5%" },
-      { title: "Status Chamado", data: "statusChamado", width: "5%" },
-    ],
-    order: [[0, 'desc']],
-    scrollY: 'calc(100vh - 380px)', 
-    scrollCollapse: true,
-    scroller: true,
-    pageLength: 5,
-    lengthMenu: [5, 10, 20]
-  });
-
-  const table = $('#tabela').DataTable();
-  $('#tabela tbody').on('click', 'tr', function () {
-    const data = table.row(this).data();
-    
-    if (data) {
-      document.getElementById('idDoChamado').value = data.id;
-      document.getElementById('tipoDoChamado').value = data.tipoDoChamado;
-      document.getElementById('solicitante').value = data.solicitante + ' - ' + data.funcao;
-      document.getElementById('statusChamado').value = data.statusChamado;
-      document.getElementById('descricao').value = data.descricao;
-      document.getElementById('informacaoExtra').value = data.informacaoExtra;
-
-      document.getElementById('botaochamado').innerHTML = '<i class="bi bi-pencil-square"></i> Alterar Chamado';
-    }
-  });
-}
-
-
-/** CADASTRO DE USUARIOS CRIA /ALTERA /LISTAR /REMOVER */
-function limparFormulario() {
-    document.getElementById('idUsuario').value = "";
-    document.getElementById('nome').value = "";
-    document.getElementById('sobrenome').value = "";
-    document.getElementById('funcao').value = "";
-    document.getElementById('cargo').value = "";
-    document.getElementById('usuario').value = "";
-    document.getElementById('ramal').value = "";
-    document.getElementById('salvarBotao').innerHTML = '<i class="bi bi-person-plus-fill"></i> Criar';
-}
-
-function salvarUsuario() {
-  const nome = document.getElementById("nome").value;
-  const funcao = document.getElementById("funcao").value;
-
-  if (nome === "" || funcao === "") {
-    mostrarAlerta("Preencha os campos Nome e Função, eles são obrigatórios.");
-    return;
-  }
-
-  const dados = {
-    qualFuncao: "cadastraUsuario",
-    idUsuario: document.getElementById('idUsuario').value,
-    nome: document.getElementById('nome').value,
-    sobrenome: document.getElementById('sobrenome').value,
-    funcao: document.getElementById('funcao').value,
-    cargo: document.getElementById('cargo').value,
-    usuario: document.getElementById('usuario').value,
-    ramal: document.getElementById('ramal').value
-  };
-
-  google.script.run
-    .withSuccessHandler(function (resposta) {
-      mostrarAlerta(resposta);
-      limparFormulario();
-      lerDadosDosUsuarios();
-      preencherSelectSolicitante(); 
-    })
-    .roteadorChamado(dados);
-}
-
-function lerDadosDosUsuarios() {
-  const dados = { qualFuncao: "lerUsuarios" };
-  google.script.run
-    .withSuccessHandler(function (resposta) {
-      preencherTabelaUsuario(resposta);
-    })
-    .roteadorChamado(dados);
-}
-
-function deletarUsuario(){
-  const dados = {
-    qualFuncao: "deletarUsuarios",
-    idUsuario: document.getElementById('idUsuario').value,
-    nome: document.getElementById('nome').value,
-    sobrenome: document.getElementById('sobrenome').value,
-    funcao: document.getElementById('funcao').value,
-    cargo: document.getElementById('cargo').value,
-    usuario: document.getElementById('usuario').value,
-    ramal: document.getElementById('ramal').value
-  };
-    google.script.run
-    .withSuccessHandler(function (resposta) {
-      mostrarAlerta(resposta);
-      limparFormulario();
-      lerDadosDosUsuarios();
-    })
-    .roteadorChamado(dados);
-}
-
-function preencherTabelaUsuario(dados) {
-  if (!Array.isArray(dados) || dados.length === 0) {
-    console.warn('Nenhum dado para exibir');
-    return;
-  }
-
-  if ($.fn.DataTable.isDataTable('#tabelausuarios')) {
-    $('#tabelausuarios').DataTable().clear().destroy();
-  }
-
-  $('#tabelausuarios tbody').empty();
-
-  const table = $('#tabelausuarios').DataTable({
-    data: dados,
-    autoWidth: false, /* Desativa o cálculo automático de largura do plugin */
-    columns: [
-      { title: "ID", data: "id", width: "0%" },
-      { title: "Nome", data: "nome", width: "20%" },
-      { title: "Sobrenome", data: "sobrenome", width: "20%" },
-      { title: "Função", data: "funcao", width: "20%" },
-      { title: "Cargo", data: "cargo", width: "20%" },
-      { title: "Usuário", data: "usuario", width: "12%" },
-      { title: "Ramal", data: "ramal", width: "8%" },
-    ],
-    columnDefs: [
-      { targets: [0], visible: false, searchable: false },
-    ],
-    order: [[0, 'desc']],
-    scrollY: 'calc(100vh - 380px)', 
-    scrollCollapse: true,
-    scroller: true
-  });
-
-  $('#tabelausuarios tbody').on('click', 'tr', function () {
-    const data = table.row(this).data();
-    
-    if (data) {
-      document.getElementById('idUsuario').value = data.id;
-      document.getElementById('nome').value = data.nome;
-      document.getElementById('sobrenome').value = data.sobrenome;
-      document.getElementById('funcao').value = data.funcao;
-      document.getElementById('cargo').value = data.cargo;
-      document.getElementById('usuario').value = data.usuario;
-      document.getElementById('ramal').value = data.ramal;
-
-      document.getElementById('salvarBotao').innerHTML = '<i class="bi bi-save-fill"></i> Salvar';
-    }
-  });
-}
-function preencherSelectSolicitante() {
-  google.script.run
-    .withSuccessHandler(function(data) {
-      const select = document.getElementById('solicitante');
-      select.innerHTML = '<option value="" disabled selected>Selecione um solicitante...</option>';
-      
-      data.forEach(function(item) {
-        if (item.nome && item.cargo) {
-          const option = document.createElement('option');
-          option.value = item.nome + ' - ' + item.cargo; 
-          option.textContent = item.nome + ' - ' + item.cargo;
-          select.appendChild(option);
+      .withSuccessHandler(function (resposta) {
+        if (Array.isArray(resposta)) {
+          resposta.sort((a, b) => {
+            if (a.statusChamado === "Pendente" && b.statusChamado !== "Pendente") return -1;
+            if (a.statusChamado !== "Pendente" && b.statusChamado === "Pendente") return 1;
+            return Number(b.id) - Number(a.id);
+          });
         }
-      });
-    })
-    .listarNomeCargo();
-}
-
-/* ==========================================================================
-   FUNÇÕES GLOBAIS DO MODAL DE ALERTA CUSTOMIZADO
-   ========================================================================== */
-function mostrarAlerta(mensagem) {
-  const modal = document.getElementById('customAlertModal');
-  const txtMensagem = document.getElementById('customAlertMessage');
-  
-  if (modal && txtMensagem) {
-    txtMensagem.textContent = message = mensagem;
-    modal.classList.add('modal-open');
-  }
-}
-
-function fecharModalAlerta() {
-  const modal = document.getElementById('customAlertModal');
-  if (modal) {
-    modal.classList.remove('modal-open');
-  }
-}
-
-/** Inicialização Unificada */
-window.onload = function () {
-    lerDadosDaTabela();
-    lerDadosDosUsuarios();
-    preencherSelectSolicitante();
-    inicializaPainel();
-};
-
-
-/** Busca o chamado no banco */
-function pesquisarChamadoPorId() {
-  const idBusca = document.getElementById('buscarIdChamado').value;
-  
-  if (!idBusca || idBusca.trim() === "") {
-    mostrarAlerta("Por favor, informe um ID válido para pesquisar.");
-    return;
-  }
-  
-  // 1. Ativa o modal de carregamento na tela
-  mostrarLoading();
-  
-  const dados = {
-    qualFuncao: "buscarUnicoChamado",
-    idChamado: idBusca.trim()
-  };
-  
-  google.script.run
-    .withSuccessHandler(function(resposta) {
-      // 2. Desativa o modal assim que o servidor responder
-      esconderLoading();
-      
-      if (resposta.status === "erro") {
-        mostrarAlerta(resposta.mensagem);
-        limparTelaPesquisa();
-        return;
-      }
-      
-      // Popula o formulário de edição com os dados retornados
-      document.getElementById('editIdChamado').value = resposta.id;
-      document.getElementById('editTipoChamado').value = resposta.tipoDoChamado;
-      document.getElementById('editSolicitante').value = resposta.solicitante + ' - ' + resposta.funcao;
-      document.getElementById('editStatusChamado').value = resposta.statusChamado;
-      document.getElementById('editFuncaoChamado').value = resposta.funcao;
-      document.getElementById('editDataChamado').value = resposta.data;
-      document.getElementById('editHoraChamado').value = resposta.hora;
-      document.getElementById('editDescricao').value = resposta.descricao;
-      document.getElementById('editInformacaoExtra').value = resposta.informacaoExtra;
-      
-      document.querySelector('.id-search-form').classList.add('form-loaded');
-    })
-    .roteadorChamado(dados);
-}
-
-/** Salva as alterações feitas na tela de pesquisa */
-function salvarEdicaoChamado() {
-  const solicitanteSelect = document.getElementById('editSolicitante');
-  const nomefuncaoCompleto = solicitanteSelect ? solicitanteSelect.value : '';
-  const [nome, funcao] = nomefuncaoCompleto.split(' - ');
-
-  const dados = {
-    qualFuncao: "entradaDeInformacoes",
-    idDoChamado: document.getElementById('editIdChamado').value,
-    tipoDoChamado: document.getElementById('editTipoChamado').value,
-    solicitante: nome,
-    funcao: funcao,
-    statusChamado: document.getElementById('editStatusChamado').value,
-    descricao: document.getElementById('editDescricao').value,
-    informacaoExtra: document.getElementById('editInformacaoExtra').value
-  };
-
-  if (!dados.solicitante) {
-    mostrarAlerta("O campo Solicitante é obrigatório para salvar.");
-    return;
+        preencherTabelaNativaChamados(resposta);
+      })
+      .roteadorChamado({ qualFuncao: "lerChamados" });
   }
 
-  google.script.run
-    .withSuccessHandler(function(resposta) {
-      mostrarAlerta(resposta);
-      limparTelaPesquisa();
-      // Atualiza a tabela principal de monitoramento em segundo plano se ela estiver aberta
-      lerDadosDaTabela(); 
-    })
-    .roteadorChamado(dados);
-}
+  /** FUNÇÃO PREENCHE TABELA CHAMADOS */
+  function preencherTabelaNativaChamados(dados) {
+    const tbody = document.getElementById("tabela-chamados-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
 
-/** Limpa todos os campos da tela de pesquisa (Ação do botão Cancelar) */
-function limparTelaPesquisa() {
-  document.getElementById('buscarIdChamado').value = '';
-  document.getElementById('editIdChamado').value = '';
-  document.getElementById('editTipoChamado').value = '';
-  document.getElementById('editSolicitante').value = '';
-  document.getElementById('editStatusChamado').value = '';
-  document.getElementById('editFuncaoChamado').value = '';
-  document.getElementById('editDataChamado').value = '';
-  document.getElementById('editHoraChamado').value = '';
-  document.getElementById('editDescricao').value = '';
-  document.getElementById('editInformacaoExtra').value = '';
-  
-  // Bloqueia novamente o formulário deixando opaco
-  document.querySelector('.id-search-form').classList.remove('form-loaded');
-}
-
-/** Vincula o select de solicitantes da pesquisa junto com os demais na carga inicial */
-function preencherSelectSolicitantePesquisa(data) {
-  const select = document.getElementById('editSolicitante');
-  if (!select) return;
-  select.innerHTML = '<option value="" disabled selected>Selecione um solicitante...</option>';
-  
-  data.forEach(function(item) {
-    if (item.nome && item.cargo) {
-      const option = document.createElement('option');
-      option.value = item.nome + ' - ' + item.cargo; 
-      option.textContent = item.nome + ' - ' + item.cargo;
-      select.appendChild(option);
+    if (!Array.isArray(dados) || dados.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-color-faded);">Nenhum chamado registrado.</td></tr>`;
+      return;
     }
-  });
-}
 
-// Pequeno ajuste na função original para ela alimentar os dois selects de uma vez só!
-const originalPreencherSelect = preencherSelectSolicitante;
-preencherSelectSolicitante = function() {
-  google.script.run
-    .withSuccessHandler(function(data) {
-      // Alimenta o select da aba telefones
-      const selectTel = document.getElementById('solicitante');
-      if(selectTel) {
-        selectTel.innerHTML = '<option value="" disabled selected>Selecione um solicitante...</option>';
-        data.forEach(item => {
-          if (item.nome && item.cargo) {
-            const option = document.createElement('option');
-            option.value = item.nome + ' - ' + item.cargo;
-            option.textContent = item.nome + ' - ' + item.cargo;
-            selectTel.appendChild(option);
+    dados.forEach(item => {
+      const tr = document.createElement("tr");
+      tr.dataset.chamadoRaw = JSON.stringify(item);
+      
+      tr.innerHTML = `
+        <td style="font-family: monospace; color: var(--cor-primaria); font-weight: 600;">#${item.id}</td>
+        <td>
+          <span style="padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; 
+            background-color: ${item.statusChamado === 'Concluído' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'}; 
+            color: ${item.statusChamado === 'Concluído' ? 'var(--cor-acaopositiva)' : 'var(--cor-pendente)'};">
+            ${item.statusChamado || ""}
+          </span>
+        </td>
+        <td>${item.tipoDoChamado || ""}</td>
+        <td style="color: var(--text-color-light); font-weight: 500;">${item.solicitante || ""}</td>
+        <td>${item.funcao || ""}</td>
+        <td>${item.descricao || ""}</td>
+        <td>${item.informacaoExtra || ""}</td>
+        <td>${item.hora || ""}</td>
+        <td>${item.data || ""}</td>
+      `;
+      
+      tr.addEventListener("click", function() {
+        const data = JSON.parse(this.dataset.chamadoRaw);
+        document.getElementById('idDoChamado').value = data.id;
+        document.getElementById('tipoDoChamado').value = data.tipoDoChamado || "";
+        document.getElementById('statusChamado').value = data.statusChamado || "";
+        document.getElementById('descricao').value = data.descricao || "";
+        document.getElementById('informacaoExtra').value = data.informacaoExtra || "";
+        
+        let solicitanteLimpo = data.solicitante ? String(data.solicitante).trim() : "";
+        let funcaoLimpa = data.funcao ? String(data.funcao).trim() : "";
+        const selectSolicitante = document.getElementById('solicitante');
+        
+        if (selectSolicitante) {
+          if (solicitanteLimpo && funcaoLimpa && !solicitanteLimpo.includes(" - ")) {
+            let valorCombinado = solicitanteLimpo + ' - ' + funcaoLimpa;
+            selectSolicitante.value = valorCombinado;
+            
+            if (selectSolicitante.value !== valorCombinado) {
+              let opt = document.createElement('option');
+              opt.value = valorCombinado; 
+              opt.textContent = valorCombinado;
+              selectSolicitante.appendChild(opt);
+              selectSolicitante.value = valorCombinado;
+            }
+          } else {
+            selectSolicitante.value = solicitanteLimpo;
           }
+        }
+        
+        document.getElementById('botaochamado').innerHTML = '<i class="bi bi-pencil-square"></i> Alterar Chamado';
+      });
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  /** MÓDULO DE CADASTRO E GERENCIAMENTO DE USUÁRIOS */
+  function verificarPermissaoSenha() {
+    try {
+      const permissao = document.getElementById("userPermissao").value;
+      const containerSenha = document.getElementById("containerSenhaUsuario");
+      const inputSenha = document.getElementById("userSenha");
+      
+      if (permissao === "admin" || permissao === "cliente") {
+        if (containerSenha) containerSenha.style.display = ""; 
+        if (inputSenha) inputSenha.required = true;
+      } else {
+        if (containerSenha) containerSenha.style.display = "none";
+        if (inputSenha) { 
+          inputSenha.value = ""; 
+          inputSenha.required = false; 
+        }
+      }
+    } catch(e) {
+      console.error("Erro na validação do campo de senha:", e);
+    }
+  }
+
+  /** FUNÇÃO QUE LIMPA OS FORMULÁRIOS */
+  function limparFormulario() {
+      if(document.getElementById('idUsuario')) document.getElementById('idUsuario').value = "";
+      if(document.getElementById('nome')) document.getElementById('nome').value = "";
+      if(document.getElementById('sobrenome')) document.getElementById('sobrenome').value = "";
+      if(document.getElementById('funcao')) document.getElementById('funcao').value = "";
+      if(document.getElementById('cargo')) document.getElementById('cargo').value = "";
+      if(document.getElementById('usuario')) document.getElementById('usuario').value = "";
+      if(document.getElementById('ramal')) document.getElementById('ramal').value = "";
+      if(document.getElementById('userPermissao')) document.getElementById('userPermissao').value = "";
+      if(document.getElementById('userSenha')) document.getElementById('userSenha').value = "";
+      if(document.getElementById('containerSenhaUsuario')) document.getElementById('containerSenhaUsuario').style.display = "none";
+      if(document.getElementById('salvarBotao')) document.getElementById('salvarBotao').innerHTML = '<i class="bi bi-person-plus-fill"></i> Criar';
+  }
+
+  /** FUNÇÃO QUE SALVA OS USUÁRIOS*/
+  function salvarUsuario() {
+    const nome = document.getElementById("nome").value;
+    const funcao = document.getElementById("funcao").value;
+    const permissao = document.getElementById("userPermissao").value;
+    const senha = document.getElementById("userSenha") ? document.getElementById("userSenha").value : "";
+
+    if (nome === "" || funcao === "") { mostrarAlerta("Preencha os campos Nome e Função, eles são obrigatórios."); return; }
+    if ((permissao === "admin" || permissao === "cliente") && senha === "") { mostrarAlerta("Definição de senha obrigatória para este nível de acesso."); return; }
+
+    const dados = {
+      qualFuncao: "cadastraUsuario", idUsuario: document.getElementById('idUsuario').value,
+      nome: nome, sobrenome: document.getElementById('sobrenome').value,
+      funcao: funcao, cargo: document.getElementById('cargo').value,
+      usuario: document.getElementById('usuario').value, ramal: document.getElementById('ramal').value,
+      permissao: permissao, senha: senha
+    };
+
+    google.script.run
+      .withSuccessHandler(function (resposta) { mostrarAlerta(resposta); limparFormulario(); lerDadosDosUsuarios(); preencherSelectSolicitante(); })
+      .roteadorChamado(dados);
+  }
+
+   /** FUNÇÃO QUE LER DADOS DOS USUÁRIOS */
+  function lerDadosDosUsuarios() {
+    if (!document.getElementById("tabela-usuarios-body")) return;
+    google.script.run.withSuccessHandler(preencherTabelaNativaUsuarios).roteadorChamado({ qualFuncao: "lerUsuarios" });
+  }
+
+   /** FUNÇÃO QUE DELETA OS USUÁRIOS*/
+  function deletarUsuario(){
+    google.script.run
+      .withSuccessHandler(function (resposta) { mostrarAlerta(resposta); limparFormulario(); lerDadosDosUsuarios(); })
+      .roteadorChamado({ qualFuncao: "deletarUsuarios", idUsuario: document.getElementById('idUsuario').value });
+  }
+
+  /** FUNÇÃO QUE PREENCHE TABELA DE USUÁRIOS*/
+  function preencherTabelaNativaUsuarios(dados) {
+    const tbody = document.getElementById("tabela-usuarios-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (!Array.isArray(dados) || dados.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-color-faded);">Nenhum usuário cadastrado.</td></tr>`;
+      return;
+    }
+
+    dados.forEach(item => {
+      const tr = document.createElement("tr");
+      tr.dataset.usuarioRaw = JSON.stringify(item);
+      tr.innerHTML = `
+        <td style="color: var(--text-color-light); font-weight: 500;">${item.nome || ""}</td>
+        <td>${item.sobrenome || ""}</td>
+        <td>${item.funcao || ""}</td>
+        <td>${item.cargo || ""}</td>
+        <td>${item.usuario || ""}</td>
+        <td style="font-family: monospace;">${item.ramal || ""}</td>
+      `;
+      
+      tr.addEventListener("click", function() {
+        const data = JSON.parse(this.dataset.usuarioRaw);
+        document.getElementById('idUsuario').value = data.id || "";
+        document.getElementById('nome').value = data.nome || "";
+        document.getElementById('sobrenome').value = data.sobrenome || "";
+        document.getElementById('funcao').value = data.funcao || "";
+        document.getElementById('cargo').value = data.cargo || "";
+        document.getElementById('usuario').value = data.usuario || "";
+        document.getElementById('ramal').value = data.ramal || "";
+        
+        if (document.getElementById('userPermissao')) document.getElementById('userPermissao').value = data.permissao || "";
+        if (document.getElementById('userSenha')) document.getElementById('userSenha').value = data.senha || "";
+        
+        verificarPermissaoSenha();
+        if(document.getElementById('salvarBotao')) document.getElementById('salvarBotao').innerHTML = '<i class="bi bi-save-fill"></i> Salvar';
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  /** MÓDULO DE ATUALIZAÇÃO DO BADGE E TAREFAS AUTOMÁTICAS */
+  function atualizarBadgeNotificacao() {
+    const badgePC = document.querySelector(".notification-badge-sino-pc");
+    const badgeMobile = document.getElementById("badge-notificacao-mobile");
+    const badgeAntigo = document.getElementById("badge-notificacao"); 
+    if (!badgePC && !badgeMobile && !badgeAntigo) return;
+
+    google.script.run.withSuccessHandler(function(chamados) {
+      if (Array.isArray(chamados)) {
+        const pendentes = chamados.filter(c => c.statusChamado === "Pendente").length;
+        if (badgePC) badgePC.textContent = pendentes;
+        if (badgeMobile) badgeMobile.textContent = pendentes;
+        if (badgeAntigo) badgeAntigo.textContent = pendentes;
+      }
+    }).roteadorChamado({ qualFuncao: "lerChamados" });
+  }
+
+  function verificarTipoRepeticao() {
+    const tipo = document.getElementById("taskRepeticao").value;
+    const inputData = document.getElementById("taskData");
+    if (!inputData) return;
+    
+    if (tipo === "Diaria") {
+      inputData.value = ""; inputData.disabled = true; inputData.placeholder = "Todos os dias";
+    } else {
+      inputData.disabled = false; inputData.placeholder = "dd/mm/aaaa";
+    }
+  }
+
+  window.abrirModalTarefa = function() {
+    const form = document.getElementById("taskForm");
+    if (form) form.reset();
+    
+    document.getElementById("idTarefa").value = "";
+    document.getElementById("taskModalTitle").textContent = "Criar Tarefa";
+    verificarTipoRepeticao();
+    
+    google.script.run.withSuccessHandler(function(usuarios) {
+      const select = document.getElementById("taskResponsavel");
+      if (!select) return;
+      
+      select.innerHTML = '<option value="" disabled selected>Selecione...</option>';
+      usuarios.forEach(u => {
+        const option = document.createElement("option");
+        option.value = u.nome; 
+        option.textContent = u.nome + " (" + u.funcao + ")";
+        select.appendChild(option);
+      });
+      
+      const modal = document.getElementById("taskModal");
+      if (modal) { modal.classList.add("modal-open"); modal.style.display = "flex"; }
+    }).roteadorChamado({ qualFuncao: "lerUsuarios" });
+  };
+
+  window.fecharModalTarefa = function() {
+    const modal = document.getElementById("taskModal");
+    if (modal) { modal.classList.remove("modal-open"); modal.style.display = "none"; }
+  };
+
+ window.salvarTarefa = function() {
+    const desc = document.getElementById("taskDescricao").value;
+    const repeticao = document.getElementById("taskRepeticao").value;
+    const dataVal = document.getElementById("taskData").value;
+    const hora = document.getElementById("taskHora").value;
+    const resp = document.getElementById("taskResponsavel").value;
+
+    if (!desc || !hora || !resp || (repeticao === "Mensal" && !dataVal)) {
+      mostrarAlerta("Por favor, preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    mostrarLoading();
+    
+    // Captura as sessões globais ativas do usuário logado no momento
+    const dados = {
+      qualFuncao: "cadastraTarefa", 
+      idTarefa: document.getElementById("idTarefa").value,
+      descricao: desc, 
+      tipoRepeticao: repeticao, 
+      data: dataVal, 
+      hora: hora, 
+      responsavel: resp,
+      
+      // Enviamos de forma transparente os dados de auditoria que você pediu
+      solicitanteLogado: nomeUsuarioLogado,
+      funcaoLogada: funcaoUsuarioLogado
+    };
+
+    google.script.run.withSuccessHandler(function(resposta) {
+      esconderLoading(); 
+      fecharModalTarefa(); 
+      mostrarAlerta(resposta); 
+      lerDadosDasTarefas();
+      
+      // Se a rotina disparar a criação imediata de um chamado, atualiza a tabela principal na hora
+      try { lerDadosDaTabela(); } catch(e){}
+    }).roteadorChamado(dados);
+  };
+
+  window.lerDadosDasTarefas = function() {
+    if (!document.getElementById("tabela-tarefas-body")) return;
+    google.script.run.withSuccessHandler(preencherTabelaNativaTarefas).roteadorChamado({ qualFuncao: "lerTarefas" });
+  };
+
+  window.preencherTabelaNativaTarefas = function(dados) {
+    const tbody = document.getElementById("tabela-tarefas-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (!Array.isArray(dados) || dados.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-color-faded);">Nenhuma tarefa agendada.</td></tr>`;
+      return;
+    }
+
+    dados.forEach(item => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-family: monospace; color: var(--cor-primaria); font-weight: 600;">#${item.id}</td>
+        <td style="color: var(--text-color-light);">${item.descricao || ""}</td>
+        <td>
+          <span style="padding: 2px 6px; border-radius: 4px; font-size: 11px; background-color: rgba(139, 92, 246, 0.1); color: var(--cor-primaria);">
+            ${item.tipoRepeticao || ""}
+          </span>
+        </td>
+        <td>${item.data || ""}</td>
+        <td>${item.hora || ""}</td>
+        <td>${item.responsavel || ""}</td>
+        <td>
+          <button class="btn-table-edit" onclick="editarTarefaEspecifica('${item.id}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn-table-delete" onclick="deletarTarefaEspecifica('${item.id}')"><i class="bi bi-trash"></i></button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  };
+
+  window.editarTarefaEspecifica = function(id) {
+    mostrarLoading();
+    google.script.run
+      .withSuccessHandler(function(tarefa) {
+        if (!tarefa) { esconderLoading(); mostrarAlerta("Erro: Os dados desta tarefa não foram localizados."); return; }
+
+        document.getElementById("idTarefa").value = tarefa.id || "";
+        document.getElementById("taskDescricao").value = tarefa.descricao || "";
+        document.getElementById("taskRepeticao").value = tarefa.tipoRepeticao || "Diaria";
+        document.getElementById("taskHora").value = tarefa.hora || "";
+        document.getElementById("taskModalTitle").textContent = "Editar Tarefa";
+        
+        if (typeof verificarTipoRepeticao === "function") verificarTipoRepeticao();
+        if (tarefa.tipoRepeticao === "Mensal") document.getElementById("taskData").value = tarefa.data || "";
+
+        google.script.run
+          .withSuccessHandler(function(usuarios) {
+            esconderLoading(); 
+            const select = document.getElementById("taskResponsavel");
+            if (select) {
+              select.innerHTML = '';
+              usuarios.forEach(u => {
+                const option = document.createElement("option");
+                option.value = u.nome; option.textContent = u.nome;
+                select.appendChild(option);
+              });
+              select.value = tarefa.responsavel;
+            }
+            const modal = document.getElementById("taskModal");
+            if (modal) { modal.classList.add("modal-open"); modal.style.display = "flex"; }
+          })
+          .roteadorChamado({ qualFuncao: "lerUsuarios" });
+      })
+      .withFailureHandler(function() { esconderLoading(); })
+      .roteadorChamado({ qualFuncao: "buscarUnicaTarefa", idTarefa: id });
+  };
+
+  function editarSolicitanteSelects(data) {
+    const selectTel = document.getElementById('solicitante');
+    const selectPesq = document.getElementById('editSolicitante');
+    if (selectTel) selectTel.innerHTML = '<option value="" disabled selected>Selecione um solicitante...</option>';
+    if (selectPesq) selectPesq.innerHTML = '<option value="" disabled selected>Selecione um solicitante...</option>';
+    
+    data.forEach(function(item) {
+      if (item.nome && item.cargo) {
+        const optionValue = item.nome + ' - ' + item.cargo;
+        if (selectTel) { let opt = document.createElement('option'); opt.value = optionValue; opt.textContent = optionValue; selectTel.appendChild(opt); }
+        if (selectPesq) { let opt = document.createElement('option'); opt.value = optionValue; opt.textContent = optionValue; selectPesq.appendChild(opt); }
+      }
+    });
+  }
+
+  function preencherSelectSolicitante() {
+    if (!document.getElementById('solicitante') && !document.getElementById('editSolicitante')) return;
+    google.script.run.withSuccessHandler(editarSolicitanteSelects).listarNomeCargo();
+  }
+
+  function mostrarAlerta(mensagem) {
+    const modal = document.getElementById('customAlertModal');
+    const txtMensagem = document.getElementById('customAlertMessage');
+    if (modal && txtMensagem) {
+      txtMensagem.textContent = mensagem; modal.classList.add('modal-open'); modal.style.display = 'flex';
+    } else { alert(mensagem); }
+  }
+
+  function fecharModalAlerta() {
+    const modal = document.getElementById('customAlertModal');
+    if (modal) { modal.classList.remove('modal-open'); modal.style.display = 'none'; }
+  }
+
+  function mostrarLoading() {
+    const loading = document.getElementById('loadingModal');
+    if (loading) { loading.classList.add('modal-open'); loading.style.display = 'flex'; }
+  }
+
+  function esconderLoading() {
+    const loading = document.getElementById('loadingModal');
+    if (loading) { loading.classList.remove('modal-open'); loading.style.display = 'none'; }
+  }
+
+window.deletarTarefaEspecifica = function(id) {
+    abrirConfirmModal(
+      "Excluir Tarefa", 
+      `Deseja realmente excluir a tarefa de rotina #${id}?`, 
+      function() {
+        mostrarLoading();
+        google.script.run
+          .withSuccessHandler(function(resposta) {
+            esconderLoading(); 
+            mostrarAlerta(resposta); 
+            lerDadosDasTarefas();
+          })
+          .roteadorChamado({ qualFuncao: "deletarTarefa", idTarefa: id });
+      }
+    );
+  };
+
+  window.onload = function () { console.log("Portal carregado."); };
+
+  /** CONTROLE DO MODAL DE CONFIRMAÇÃO PERSONALIZADO */
+  function abrirConfirmModal(titulo, mensagem, acaoConfirmada) {
+    try {
+      if (document.getElementById("confirmModalTitle")) document.getElementById("confirmModalTitle").textContent = titulo;
+      if (document.getElementById("confirmModalMessage")) document.getElementById("confirmModalMessage").textContent = mensagem;
+      
+      const btnSim = document.getElementById("confirmModalBtnSim");
+      if (btnSim) {
+        const novoBtnSim = btnSim.cloneNode(true);
+        btnSim.parentNode.replaceChild(novoBtnSim, btnSim);
+        
+        novoBtnSim.addEventListener("click", function() {
+          fecharConfirmModal();
+          acaoConfirmada();
         });
       }
-      // Alimenta o select da nossa nova aba de pesquisa
-      preencherSelectSolicitantePesquisa(data);
-    })
-    .listarNomeCargo();
-}
-
-function mostrarLoading() {
-  const loading = document.getElementById('loadingModal');
-  if (loading) {
-    loading.classList.add('modal-open');
+      
+      const modal = document.getElementById("confirmModal");
+      if (modal) {
+        modal.style.display = "flex";
+        modal.classList.add("modal-open");
+      }
+    } catch(e) {
+      console.error("Erro ao abrir modal de confirmação:", e);
+    }
   }
-}
 
-function esconderLoading() {
-  const loading = document.getElementById('loadingModal');
-  if (loading) {
-    loading.classList.remove('modal-open');
+  /** Fecha o modal de confirmação */ 
+  function fecharConfirmModal() {
+    try {
+      const modal = document.getElementById("confirmModal");
+      if (modal) {
+        modal.style.display = "none";
+        modal.classList.remove("modal-open");
+      }
+    } catch(e) {
+      console.error("Erro ao fechar modal de confirmação:", e);
+    }
   }
-}
 </script>
