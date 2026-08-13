@@ -436,7 +436,7 @@
           return;
         }
         
-        /** Alimenta os campos de texto comuns com os dados do servidor */ 
+        /** Alimenta os campos mapeando a nova disposição da tela */ 
         document.getElementById('editIdChamado').value = resposta.id || "";
         document.getElementById('editTipoChamado').value = resposta.tipoDoChamado || "";
         document.getElementById('editStatusChamado').value = resposta.statusChamado || "";
@@ -444,9 +444,15 @@
         document.getElementById('editDataChamado').value = resposta.data || "";
         document.getElementById('editHoraChamado').value = resposta.hora || "";
         document.getElementById('editDescricao').value = resposta.descricao || "";
-        document.getElementById('editInformacaoExtra').value = resposta.informacaoExtra || "";
         
-        /** Reconstrói a chave combinada para o seletor de Solicitante*/
+        // Informação extra inserida no input pequeno de cima
+        document.getElementById('editInformacaoExtra').value = resposta.informacaoExtra || "---";
+        
+        // Novos campos das colunas J e K
+        document.getElementById('editRepeticaoChamado').value = resposta.tipoRepeticao || "---";
+        document.getElementById('editComandoChamado').value = resposta.comando || "";
+        
+        /** Reconstrói a chave combinada para o seletor de Solicitante */
         let solicitanteLimpo = resposta.solicitante ? String(resposta.solicitante).trim() : "";
         let funcaoLimpa = resposta.funcao ? String(resposta.funcao).trim() : "";
         const selectPesquisa = document.getElementById('editSolicitante');
@@ -468,13 +474,13 @@
           }
         }
         
-        /**  Remove o 'disabled' de todos os campos editáveis*/
+        /** CORREÇÃO DOS BLOQUEIOS: Infromação Extra NÃO destrava, Comando Destrava! */
         const camposParaDestravar = [
           'editTipoChamado', 
           'editStatusChamado', 
           'editSolicitante', 
           'editDescricao', 
-          'editInformacaoExtra'
+          'editComandoChamado' // O Textarea grande de comando técnico fica 100% editável
         ];
         
         camposParaDestravar.forEach(idCampo => {
@@ -507,16 +513,28 @@
       qualFuncao: "entradaDeInformacoes",
       idDoChamado: document.getElementById('editIdChamado').value,
       tipoDoChamado: document.getElementById('editTipoChamado').value,
-      solicitante: nome, funcao: funcao,
+      solicitante: nome, 
+      funcao: funcao,
       statusChamado: document.getElementById('editStatusChamado').value,
       descricao: document.getElementById('editDescricao').value,
-      informacaoExtra: document.getElementById('editInformacaoExtra').value
+      informacaoExtra: document.getElementById('editInformacaoExtra').value,
+      
+      // Preserva/Atualiza as novas colunas estruturadas no salvamento
+      tipoRepeticao: document.getElementById('editRepeticaoChamado').value,
+      comando: document.getElementById('editComandoChamado').value
     };
 
     if (!dados.solicitante) { mostrarAlerta("O campo Solicitante é obrigatório para salvar."); return; }
 
+    mostrarLoading();
     google.script.run
-      .withSuccessHandler(function(resposta) { mostrarAlerta(resposta); limparTelaPesquisa(); lerDadosDaTabela(); atualizarBadgeNotificacao(); })
+      .withSuccessHandler(function(resposta) { 
+        esconderLoading();
+        mostrarAlerta(resposta); 
+        limparTelaPesquisa(); 
+        lerDadosDaTabela(); 
+        atualizarBadgeNotificacao(); 
+      })
       .roteadorChamado(dados);
   }
 
@@ -525,7 +543,8 @@
     const campos = [
       'buscarIdChamado', 'editIdChamado', 'editTipoChamado', 'editSolicitante',
       'editStatusChamado', 'editFuncaoChamado', 'editDataChamado', 
-      'editHoraChamado', 'editDescricao', 'editInformacaoExtra'
+      'editHoraChamado', 'editDescricao', 'editInformacaoExtra',
+      'editRepeticaoChamado', 'editComandoChamado'
     ];
     
     campos.forEach(id => {
@@ -533,10 +552,10 @@
       if (el) el.value = '';
     });
     
-    /** Bloqueia novamente os campos para o estado padrão de segurança (disabled)*/ 
+    /** Bloqueia novamente os campos no reset de segurança */ 
     const camposParaBloquear = [
       'editTipoChamado', 'editStatusChamado', 'editSolicitante', 
-      'editDescricao', 'editInformacaoExtra'
+      'editDescricao', 'editInformacaoExtra', 'editComandoChamado'
     ];
     
     camposParaBloquear.forEach(idCampo => {
@@ -547,7 +566,6 @@
     const form = document.querySelector('.id-search-form');
     if (form) form.classList.remove('form-loaded');
   }
-
   /** FUNÇÃO DE LIMPEZA DOS FORMULARIOS DE CHAMADOS VIA TELEFONE */
   function limparFormularioChamado() {
     if(document.getElementById('idDoChamado')) document.getElementById('idDoChamado').value = '';
@@ -844,30 +862,34 @@
   };
 
  window.salvarTarefa = function() {
+    const rotinaNome = document.getElementById("taskRotinaNome").value.trim();
     const desc = document.getElementById("taskDescricao").value;
+    const comandoTexto = document.getElementById("taskComando").value.trim(); // Captura o novo input
     const repeticao = document.getElementById("taskRepeticao").value;
     const dataVal = document.getElementById("taskData").value;
     const hora = document.getElementById("taskHora").value;
-    const resp = document.getElementById("taskResponsavel").value;
+    const respCompleto = document.getElementById("taskResponsavel").value.trim();
 
-    if (!desc || !hora || !resp || (repeticao === "Mensal" && !dataVal)) {
+    if (!rotinaNome || !desc || !comandoTexto || !hora || !respCompleto || (repeticao === "Mensal" && !dataVal)) {
       mostrarAlerta("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
 
+    const partesDoNome = respCompleto.split(" ");
+    const respCurto = partesDoNome[0] + (partesDoNome[1] ? " " + partesDoNome[1] : "");
+
     mostrarLoading();
     
-    // Captura as sessões globais ativas do usuário logado no momento
     const dados = {
       qualFuncao: "cadastraTarefa", 
       idTarefa: document.getElementById("idTarefa").value,
+      rotina: rotinaNome,
       descricao: desc, 
+      comando: comandoTexto, // Mapeado para envio estável
       tipoRepeticao: repeticao, 
       data: dataVal, 
       hora: hora, 
-      responsavel: resp,
-      
-      // Enviamos de forma transparente os dados de auditoria que você pediu
+      responsavel: respCurto, 
       solicitanteLogado: nomeUsuarioLogado,
       funcaoLogada: funcaoUsuarioLogado
     };
@@ -877,8 +899,6 @@
       fecharModalTarefa(); 
       mostrarAlerta(resposta); 
       lerDadosDasTarefas();
-      
-      // Se a rotina disparar a criação imediata de um chamado, atualiza a tabela principal na hora
       try { lerDadosDaTabela(); } catch(e){}
     }).roteadorChamado(dados);
   };
@@ -894,15 +914,35 @@
     tbody.innerHTML = "";
 
     if (!Array.isArray(dados) || dados.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-color-faded);">Nenhuma tarefa agendada.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-color-faded);">Nenhuma tarefa agendada.</td></tr>`;
       return;
     }
 
     dados.forEach(item => {
+      let textoCel = String(item.descricao || "");
+      let rotinaNome = "---";
+      let comandoDiretriz = "---";
+      let descricaoReal = textoCel;
+
+      // Se a tarefa possuir o formato triplo compactado, separa os campos para exibição individual
+      if (textoCel.includes(" // ")) {
+        let partes = textoCel.split(" // ");
+        if (partes.length >= 3) {
+          rotinaNome = partes[0];
+          comandoDiretriz = partes[1];
+          descricaoReal = partes[2];
+        } else {
+          rotinaNome = partes[0];
+          descricaoReal = partes[1];
+        }
+      }
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td style="font-family: monospace; color: var(--cor-primaria); font-weight: 600;">#${item.id}</td>
-        <td style="color: var(--text-color-light);">${item.descricao || ""}</td>
+        <td style="color: var(--text-color-light); font-weight: 500;">${rotinaNome}</td>
+        <td style="color: var(--text-color-light);">${descricaoReal}</td>
+        <td style="color: var(--text-color-faded); font-style: italic;">${comandoDiretriz}</td>
         <td>
           <span style="padding: 2px 6px; border-radius: 4px; font-size: 11px; background-color: rgba(139, 92, 246, 0.1); color: var(--cor-primaria);">
             ${item.tipoRepeticao || ""}
@@ -920,6 +960,7 @@
     });
   };
 
+
   window.editarTarefaEspecifica = function(id) {
     mostrarLoading();
     google.script.run
@@ -927,7 +968,9 @@
         if (!tarefa) { esconderLoading(); mostrarAlerta("Erro: Os dados desta tarefa não foram localizados."); return; }
 
         document.getElementById("idTarefa").value = tarefa.id || "";
+        document.getElementById("taskRotinaNome").value = tarefa.rotina || ""; 
         document.getElementById("taskDescricao").value = tarefa.descricao || "";
+        document.getElementById("taskComando").value = tarefa.comando || ""; // Devolve o comando ao modal na edição
         document.getElementById("taskRepeticao").value = tarefa.tipoRepeticao || "Diaria";
         document.getElementById("taskHora").value = tarefa.hora || "";
         document.getElementById("taskModalTitle").textContent = "Editar Tarefa";
@@ -1058,4 +1101,242 @@ window.deletarTarefaEspecifica = function(id) {
       console.error("Erro ao fechar modal de confirmação:", e);
     }
   }
+
+
+  /**CONTROLE DA INTERFACE DE ROTINAS ATIVAS E HISTÓRICO*/
+
+
+let cacheRotinaAtual = null;
+let cacheHistoricoRotinasMap = {};
+
+function carregarCardRotinaAbertura() {
+  const container = document.getElementById("container-regras-rotinas");
+  if (!container) return;
+
+  container.innerHTML = `<p style="color: var(--text-color-faded); padding: 12px;">Verificando status da rotina no dia de hoje...</p>`;
+
+  google.script.run
+    .withSuccessHandler(function(resultado) {
+      container.innerHTML = "";
+
+      if (!resultado.encontrado) {
+        container.innerHTML = `
+          <div class="placeholder-view" style="grid-column: 1/-1;">
+            <i class="bi bi-calendar-x"></i>Nenhum chamado de rotina "Abertura" foi gerado para a data de hoje.
+          </div>`;
+      } else {
+        cacheRotinaAtual = resultado;
+        renderizarCardRotina(container, resultado, "Hoje");
+      }
+
+      // Carrega automaticamente o histórico das últimas 5 rotinas
+      carregarHistoricoRotinas();
+    })
+    .roteadorChamado({ qualFuncao: "consultarStatusRotina", nomeRotina: "Abertura" });
+}
+
+function carregarHistoricoRotinas() {
+  const containerHist = document.getElementById("container-historico-rotinas");
+  const btnRestaurar = document.getElementById("btnRestaurarHistorico");
+  const tituloHist = document.getElementById("titulo-secao-historico");
+  
+  if (!containerHist) return;
+  
+  if (btnRestaurar) btnRestaurar.style.display = "none";
+  if (tituloHist) tituloHist.textContent = "Últimas 5 Rotinas Anteriores";
+  containerHist.innerHTML = `<p style="color: var(--text-color-faded); padding: 12px;">Carregando histórico anterior...</p>`;
+
+  google.script.run
+    .withSuccessHandler(function(resposta) {
+      containerHist.innerHTML = "";
+      cacheHistoricoRotinasMap = {};
+
+      if (!resposta.historico || resposta.historico.length === 0) {
+        containerHist.innerHTML = `
+          <div class="placeholder-view" style="grid-column: 1/-1; padding: 20px;">
+            <i class="bi bi-clock-history"></i>Nenhum histórico de rotinas anteriores localizado.
+          </div>`;
+        return;
+      }
+
+      resposta.historico.forEach(rotina => {
+        cacheHistoricoRotinasMap[rotina.data] = rotina;
+        renderizarCardRotina(containerHist, rotina, rotina.data);
+      });
+    })
+    .roteadorChamado({ qualFuncao: "consultarHistoricoRotinas", nomeRotina: "Abertura" });
+}
+
+function buscarRotinaPorData() {
+  const inputData = document.getElementById("inputDataBuscaRotina");
+  const dataValor = inputData ? inputData.value : "";
+
+  if (!dataValor) {
+    if (typeof mostrarAlerta === "function") mostrarAlerta("Por favor, escolha uma data para pesquisar.");
+    return;
+  }
+
+  // Converte AAAA-MM-DD para DD/MM/AAAA
+  const partes = dataValor.split("-");
+  const dataFormatadaBR = `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+  const containerHist = document.getElementById("container-historico-rotinas");
+  const btnRestaurar = document.getElementById("btnRestaurarHistorico");
+  const tituloHist = document.getElementById("titulo-secao-historico");
+
+  if (!containerHist) return;
+
+  mostrarLoading();
+
+  google.script.run
+    .withSuccessHandler(function(resposta) {
+      esconderLoading();
+      containerHist.innerHTML = "";
+
+      if (btnRestaurar) btnRestaurar.style.display = "inline-block";
+      if (tituloHist) tituloHist.textContent = `Resultado da pesquisa: ${dataFormatadaBR}`;
+
+      if (!resposta.buscaResultado || !resposta.buscaResultado.encontrado) {
+        containerHist.innerHTML = `
+          <div class="placeholder-view" style="grid-column: 1/-1; padding: 20px;">
+            <i class="bi bi-search"></i>Nenhuma rotina registrada para a data ${dataFormatadaBR}.
+          </div>`;
+        return;
+      }
+
+      const rotina = resposta.buscaResultado;
+      cacheHistoricoRotinasMap[rotina.data] = rotina;
+      renderizarCardRotina(containerHist, rotina, rotina.data);
+    })
+    .withFailureHandler(function(erro) {
+      esconderLoading();
+      if (typeof mostrarAlerta === "function") mostrarAlerta("Erro ao pesquisar: " + erro.message);
+    })
+    .roteadorChamado({ qualFuncao: "consultarHistoricoRotinas", nomeRotina: "Abertura", dataBusca: dataFormatadaBR });
+}
+
+function renderizarCardRotina(container, resultado, rotuloData) {
+  let corBg = resultado.statusGeral === "Pendente" ? "rgba(245, 158, 11, 0.1)" : "rgba(16, 185, 129, 0.1)";
+  let corTexto = resultado.statusGeral === "Pendente" ? "var(--cor-pendente)" : "var(--cor-acaopositiva)";
+
+  const card = document.createElement("div");
+  card.className = "card1";
+  card.style.height = "auto";
+  card.style.flexDirection = "column";
+  card.style.alignItems = "flex-start";
+  card.style.gap = "12px";
+
+  card.innerHTML = `
+    <div style="display:flex; justify-content:space-between; width:100%; align-items:center; border-bottom:1px solid var(--cor-linhas); padding-bottom:6px;">
+      <span style="font-family:monospace; color:var(--cor-primaria); font-weight:600; text-transform:uppercase;">${resultado.nomeRotina}</span>
+      <span style="padding: 2px 8px; border-radius:4px; font-size:11px; font-weight:600; background-color:${corBg}; color:${corTexto};">${resultado.statusGeral}</span>
+    </div>
+    <div style="width:100%;">
+      <p style="margin:0; font-size:14px; font-weight:700; color:white;">Rotina de ${resultado.nomeRotina}</p>
+      <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-color-faded);">📅 Data: <strong>${resultado.data}</strong></p>
+    </div>
+    <div style="width:100%; margin-top:4px;">
+      <button type="button" class="butons-bot" onclick="abrirModalDetalhesRotinaObjeto('${resultado.data}')" style="height:32px; font-size:12px; width:100%; justify-content:center;">
+        <i class="bi bi-eye"></i> Ver mais
+      </button>
+    </div>
+  `;
+  container.appendChild(card);
+}
+
+function abrirModalDetalhesRotinaObjeto(dataChave) {
+  let rotinaAlvo = cacheHistoricoRotinasMap[dataChave] || (cacheRotinaAtual && cacheRotinaAtual.data === dataChave ? cacheRotinaAtual : null);
+  if (!rotinaAlvo) return;
+
+  // Atualiza o cache global ativo para o gerador de PDF imprimir a rotina selecionada
+  cacheRotinaAtual = rotinaAlvo;
+
+  document.getElementById("mdRotinaSolicitante").textContent = rotinaAlvo.solicitante || "Não informado";
+  document.getElementById("mdRotinaData").textContent = rotinaAlvo.data;
+
+  const tbody = document.getElementById("mdRotinaTabelaBody");
+  tbody.innerHTML = "";
+
+  rotinaAlvo.tarefas.forEach(task => {
+    const tr = document.createElement("tr");
+    tr.style.borderBottom = "1px solid var(--cor-linhas)";
+
+    let corTextoStatus = task.status === "Concluído" ? "var(--cor-acaopositiva)" : "var(--cor-pendente)";
+
+    tr.innerHTML = `
+      <td style="padding: 10px; color: white; white-space: normal; word-break: break-word;">${task.descricao}</td>
+      <td style="padding: 10px;">
+        <span style="padding: 2px 6px; border-radius: 4px; font-size: 11px; background-color: rgba(139, 92, 246, 0.1); color: var(--cor-primaria);">
+          ${task.quando}
+        </span>
+      </td>
+      <td style="padding: 10px; color: var(--text-color-faded); font-style: italic; white-space: normal; word-break: break-word;">${task.comando}</td>
+      <td style="padding: 10px; font-weight: 600; color: ${corTextoStatus};">${task.status}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const modal = document.getElementById("modalDetalhesRotina");
+  if (modal) { modal.style.display = "flex"; modal.classList.add("modal-open"); }
+}
+
+function abrirModalDetalhesRotina() {
+  if (cacheRotinaAtual && cacheRotinaAtual.data) {
+    abrirModalDetalhesRotinaObjeto(cacheRotinaAtual.data);
+  }
+}
+
+function fecharModalDetalhesRotina() {
+  const modal = document.getElementById("modalDetalhesRotina");
+  if (modal) { modal.style.display = "none"; modal.classList.remove("modal-open"); }
+}
+
+
+
+ /**  GERADOR DE PDF / IMPRESSÃO VIA ESTRUTURA HTML DIRETA */
+
+function gerarPdfChecklistRotina() {
+  if (!cacheRotinaAtual || !cacheRotinaAtual.tarefas) {
+    if (typeof mostrarAlerta === "function") mostrarAlerta("Nenhum dado encontrado para gerar o PDF.");
+    return;
+  }
+
+  var operadoresTexto = cacheRotinaAtual.solicitante || "Não informado";
+  if (Array.isArray(cacheRotinaAtual.operadores) && cacheRotinaAtual.operadores.length > 0) {
+    operadoresTexto = cacheRotinaAtual.operadores.join(" / ");
+  }
+
+  // Preenche os metadados do cabeçalho no HTML
+  document.getElementById("print-rotina-nome").textContent = "Rotina: " + (cacheRotinaAtual.nomeRotina || 'Abertura');
+  document.getElementById("print-meta-data").textContent = cacheRotinaAtual.data || '';
+  document.getElementById("print-meta-operadores").textContent = operadoresTexto;
+
+  // Monta as linhas da tabela com a regra OK / NÃO
+  var tbody = document.getElementById("print-tabela-body");
+  tbody.innerHTML = "";
+
+  cacheRotinaAtual.tarefas.forEach(function(t) {
+    var statusOk = "";
+    var statusNao = "";
+
+    if (String(t.status).toLowerCase() === "concluído" || String(t.status).toLowerCase() === "concluido") {
+      statusOk = "<b style='color:#10b981;'>OK</b>";
+    } else {
+      statusNao = "<b style='color:#ef4444;'>NÃO</b>";
+    }
+
+    var tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td style="text-align: left;">${t.descricao || "---"}</td>
+      <td style="text-align: center;">${t.quando || "Diariamente"}</td>
+      <td style="text-align: left;">${t.comando || "---"}</td>
+      <td style="text-align: center;">${statusOk}</td>
+      <td style="text-align: center;">${statusNao}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Dispara a impressão nativa utilizando o layout formatado com a logo Base64 do HTML
+  window.print();
+}
 </script>

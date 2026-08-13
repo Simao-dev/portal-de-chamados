@@ -1,10 +1,10 @@
 <style>
-  /* --- ESTILO TELA DE LOGIN --- */
+  /* ESTILO TELA DE LOGIN */
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   body {
@@ -60,7 +60,9 @@
     font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
   .btn-register:hover {
@@ -123,7 +125,7 @@
   .btn-login {
     width: 100%;
     padding: 15px;
-    background-color:     var(--cor-primaria);
+    background-color: var(--cor-primaria);
     color: #ffffff;
     border: none;
     border-radius: 8px;
@@ -158,7 +160,6 @@
     }
   }
 
-
   /* --- ESTILO DO SISTEMA --- */
   :root {
     --cor-fundoprincipal: #0f172a;
@@ -178,7 +179,7 @@
   }
 
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
     height: 100vh;
     margin: 0;
     background-color: var(--cor-fundoprincipal);
@@ -195,9 +196,7 @@
     box-sizing: border-box;
   }
 
-  /* ==========================================================================
-   MENU LATERAL / SIDEBAR (ESTADO PADRÃO DESKTOP)
-   ========================================================================== */
+  /* MENU LATERAL / SIDEBAR */
   .menu {
     width: 260px;
     min-width: 260px;
@@ -219,7 +218,6 @@
     gap: 12px;
   }
 
-  /* Pequeno ponto roxo de marca adicionado para o PC */
   .brand-dot-pc {
     width: 8px;
     height: 8px;
@@ -228,7 +226,6 @@
     box-shadow: 0 0 8px var(--cor-primaria);
   }
 
-  /* Estilização para as divisórias MENU e NOTIFICAÇÕES em computadores */
   .sidebar-section-title-pc {
     font-size: 10px;
     font-weight: 700;
@@ -291,7 +288,6 @@
     display: none;
   }
 
-  /* Ajustes do bloco inferior para organizar o Logoff no PC */
   .sidebar-footer {
     margin-top: auto;
     padding: 12px 0 0 0;
@@ -342,9 +338,7 @@
     padding-left: 8px;
   }
 
-  /* ==========================================================================
-   CONTEÚDO PRINCIPAL (DESKTOP)
-   ========================================================================== */
+  /* CONTEÚDO PRINCIPAL */
   .funcoes {
     flex: 1;
     padding: 24px;
@@ -560,15 +554,21 @@
   }
 
   .progress-ring-bar {
-    stroke-dashoffset: calc(188.49 - (188.49 * var(--percentage-total, 0)) / 100);
+    stroke-dashoffset: calc(
+      188.49 - (188.49 * var(--percentage-total, 0)) / 100
+    );
   }
 
   .progress-ring-bar-solicitante {
-    stroke-dashoffset: calc(188.49 - (188.49 * var(--percentage-solicitante, 0)) / 100);
+    stroke-dashoffset: calc(
+      188.49 - (188.49 * var(--percentage-solicitante, 0)) / 100
+    );
   }
 
   .progress-ring-bar-tipo {
-    stroke-dashoffset: calc(188.49 - (188.49 * var(--percentage-tipo, 0)) / 100);
+    stroke-dashoffset: calc(
+      188.49 - (188.49 * var(--percentage-tipo, 0)) / 100
+    );
   }
 
   .card-percentage {
@@ -767,7 +767,7 @@
     /* Mantém uma altura limite excelente para o painel */
     overflow-y: auto;
     /* GARANTE: Rolagem de cima para baixo ativa */
-    overflow-x: hidden;
+    overflow-x: auto;
     /* REMOVE: Barra de rolagem lateral horizontal */
     box-sizing: border-box;
     margin-top: 15px;
@@ -1066,9 +1066,7 @@
     cursor: not-allowed;
   }
 
-  /* ==========================================================================
-   ESTILOS ADICIONAIS: SUPORTE SINO FLUTUANTE E LAYOUT RE-ESTRUTURADO (PC)
-   ========================================================================== */
+  /* ESTILOS ADICIONAIS: SUPORTE SINO FLUTUANTE E LAYOUT */
   .sino-flutuante-pc {
     position: fixed;
     bottom: 24px;
@@ -1113,12 +1111,8 @@
     box-shadow: 0 0 8px var(--cor-pendente);
   }
 
-
-  /* ==========================================================================
-   MÓDULO DE RESPONSIVIDADE ULTRA-RIGIDO: TRANSFORMAÇÃO CLONE ANDROID (S.I)
-   ========================================================================== */
+  /* MÓDULO DE RESPONSIVIDADE TRANSFORMAÇÃO ESTILO ANDROID */
   @media screen and (max-width: 800px) {
-
     body,
     html {
       overflow: hidden !important;
@@ -1131,17 +1125,14 @@
       overflow: hidden !important;
     }
 
-    /* Esconde o sino flutuante dinâmico de PC na tela de celular */
     .sino-flutuante-pc {
       display: none !important;
     }
 
-    /* Esconde os títulos MENU e NOTIFICAÇÕES em celulares para manter o visual slim compact */
     .sidebar-section-title-pc {
       display: none !important;
     }
 
-    /* 1. CLONE DA BARRA LATERAL -> EXATAMENTE 70PX FIEL AO PRINT */
     .container .menu {
       width: 70px !important;
       min-width: 70px !important;
@@ -1156,7 +1147,6 @@
       justify-content: flex-start !important;
     }
 
-    /* Exibe o cabeçalho estilizado 'S.I' */
     .container .menu .sidebar-title {
       width: 100% !important;
       padding: 12px 0 24px 0 !important;
@@ -1178,7 +1168,6 @@
       letter-spacing: 0.05em !important;
     }
 
-    /* Transforma a lista de navegação em pastilhas quadradas de ícones puros */
     .container .menu .menu-items-wrapper {
       align-items: center !important;
       width: 100% !important;
@@ -1219,7 +1208,6 @@
       color: var(--text-color-light) !important;
     }
 
-    /* 2. BASE DE NOTIFICAÇÕES (SINO POSICIONADO ABAIXO COMO NO PRINT) */
     .container .menu .sidebar-footer {
       border-top: none !important;
       margin-top: auto !important;
@@ -1229,7 +1217,6 @@
     .container .menu .sidebar-logout-container-pc,
     .container .menu .version-label-pc {
       display: none !important;
-      /* Oculta o logoff estruturado de PC na barra slim mobile */
     }
 
     .container .menu .sidebar-notifications {
@@ -1280,7 +1267,6 @@
       border-radius: 4px !important;
     }
 
-    /* 3. VIEWPORT DA ÁREA DE CONTEÚDO ATIVO AO LADO DO MENU */
     .container .funcoes {
       padding: 24px 16px !important;
       height: 100vh !important;
@@ -1317,7 +1303,6 @@
       font-size: 28px !important;
     }
 
-    /* 4. EMPILHAMENTO VERTICAL DOS BLOCOS */
     .container .cards-chamados {
       flex-direction: column !important;
       gap: 16px !important;
@@ -1381,11 +1366,8 @@
     .container .divatabela,
     .container .divtabelausuarios {
       max-height: calc(100vh - 360px) !important;
-      /* Altura limite no mobile */
       overflow-y: auto !important;
-      /* GARANTE: Rolagem vertical de cima para baixo */
-      overflow-x: hidden !important;
-      /* REMOVE: Barra horizontal que deslocava para os lados */
+      overflow-x: auto !important;
       display: block !important;
       -webkit-overflow-scrolling: touch;
     }

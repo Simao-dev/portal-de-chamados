@@ -1,438 +1,674 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Portal de Chamados</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Portal de Chamados</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="pagina_inicial.css" />
+  </head>
 
-  <link rel="stylesheet" href="pagina_inicial.css" />
-</head>
-
-<body>
-  <div class="container">
-
-    <div class="menu">
-      <div class="sidebar-title">
-        <div class="brand-logo-compact">S.I</div>
-        <div class="brand-text-full">
-          <div class="brand-dot-pc"></div>
-          <span class="title-label">S.I Sistemas</span>
+  <body>
+    <div class="container">
+      <div class="menu">
+        <div class="sidebar-title">
+          <div class="brand-logo-compact">S.I</div>
+          <div class="brand-text-full">
+            <div class="brand-dot-pc"></div>
+            <span class="title-label">S.I Sistemas</span>
+          </div>
         </div>
-      </div>
 
-      <div class="sidebar-section-title-pc">MENU</div>
-      <div class="menu-items-wrapper">
-        <button class="menu-navegação" data-alvo="metricas" onclick="inicializaPainel()"><i class="bi bi-bar-chart-fill"></i><span class="btn-text">Métricas</span></button>
-        <button class="menu-navegação" data-alvo="chamados"><i class="bi bi-clipboard-check-fill"></i><span class="btn-text">Chamados</span></button>
-        <button class="menu-navegação" data-alvo="pesquisa"><i class="bi bi-search"></i><span class="btn-text">Pesquisar</span></button>
-        <button class="menu-navegação" data-alvo="telefone"><i class="bi bi-telephone-minus-fill"></i><span class="btn-text">Central de Chamados</span></button>
-        <button class="menu-navegação" data-alvo="cadastro"><i class="bi bi-person-fill"></i><span class="btn-text">Criar usuário</span></button>
-        <button class="menu-navegação" data-alvo="tarefas-aba"><i class="bi bi-calendar2-range-fill"></i><span class="btn-text">Tarefas</span></button>
-        <button class="menu-navegação" data-alvo="buscaRamais"><i class="bi bi-calendar2-range-fill"></i><span class="btn-text">Ramais</span></button>
-      </div>
-
-      <div class="sidebar-notifications">
-        <span class="notif-title">NOTIFICAÇÕES</span>
-        <div class="bell-wrapper">
-          <i class="bi bi-bell-fill"></i>
-          <span id="badge-notificacao-mobile" class="mobile-bell-badge">0</span>
-        </div>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="sidebar-logout-container-pc">
-          <button type="button" onclick="fazerLogout()" class="btn-logout-pc">
-            <i class="bi bi-box-arrow-right"></i><span>Sair do Sistema</span>
+        <div class="sidebar-section-title-pc">MENU</div>
+        <div class="menu-items-wrapper">
+          <button
+            class="menu-navegação"
+            data-alvo="metricas"
+            onclick="inicializaPainel()"
+          >
+            <i class="bi bi-bar-chart-fill"></i
+            ><span class="btn-text">Métricas</span>
+          </button>
+          <button class="menu-navegação" data-alvo="chamados">
+            <i class="bi bi-clipboard-check-fill"></i
+            ><span class="btn-text">Chamados</span>
+          </button>
+          <button class="menu-navegação" data-alvo="pesquisa">
+            <i class="bi bi-search"></i><span class="btn-text">Pesquisar</span>
+          </button>
+          <button class="menu-navegação" data-alvo="telefone">
+            <i class="bi bi-telephone-minus-fill"></i
+            ><span class="btn-text">Central de Chamados</span>
+          </button>
+          <button class="menu-navegação" data-alvo="cadastro">
+            <i class="bi bi-person-fill"></i
+            ><span class="btn-text">Criar usuário</span>
+          </button>
+          <button class="menu-navegação" data-alvo="tarefas-aba">
+            <i class="bi bi-calendar2-range-fill"></i
+            ><span class="btn-text">Tarefas</span>
+          </button>
+          <button
+            class="menu-navegação"
+            data-alvo="rotinas-aba-cliente"
+            onclick="carregarCardRotinaAbertura()"
+          >
+            <i class="bi bi-arrow-repeat"></i
+            ><span class="btn-text">Rotinas</span>
           </button>
         </div>
-        <div class="version-label-pc">simao.dev v3.0</div>
-      </div>
-    </div>
 
-    <div class="funcoes">
-      <!-- ABA: CHAMADOS COM TABELA DE HISTÓRICO EXCLUSIVA -->
-      <div class="form-area" id="chamados">
-        <div class="form-scrollable-container">
-          <div class="section-header"
-            style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 20px;">
-            <div>
-              <h3 class="tipo">Chamados</h3>
-              <p class="section-subtitle">Acompanhe seus chamados ou abra uma nova solicitação direto na plataforma.</p>
-            </div>
-            <button type="button" class="butons-bot" onclick="abrirModalNovoChamado()" style="width: auto;">
-        <i class="bi bi-plus-lg"></i> Criar novo chamado
-      </button>
-          </div>
-
-          <!-- NOVA TABELA DE HISTÓRICO DO USUÁRIO -->
-          <div class="tabela-container"
-            style="width: 100%; overflow-x: auto; background-color: var(--cor-fundoprincipal); border: 1px solid var(--cor-linhas); border-radius: 8px;">
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-              <thead>
-                <tr
-                  style="background-color: rgba(15, 23, 42, 0.6); color: var(--text-color-faded); border-bottom: 1px solid var(--cor-linhas);">
-                  <th style="padding: 12px 16px; font-weight: 600;">ID</th>
-                  <th style="padding: 12px 16px; font-weight: 600;">Tipo</th>
-                  <th style="padding: 12px 16px; font-weight: 600;">Descrição</th>
-                  <th style="padding: 12px 16px; font-weight: 600;">Data</th>
-                  <th style="padding: 12px 16px; font-weight: 600;">Hora</th>
-                  <th style="padding: 12px 16px; font-weight: 600;">Status</th>
-                </tr>
-              </thead>
-              <tbody id="tabela-chamados-cliente-body" style="color: var(--cor-textoprincipal);">
-                <tr>
-                  <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-color-faded);">
-                    Carregando seu histórico de chamados...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="form-area" id="pesquisa">
-        <div class="form-scrollable-container">
-          <div class="section-header">
-            <h3 class="tipo">Pesquisar chamado</h3>
-            <p class="section-subtitle">Busque por um ID para visualizar, editar ou atualizar os detalhes do ticket.</p>
-          </div>
-
-          <div class="search-bar-container">
-            <label for="buscarIdChamado">ID do Chamado:</label>
-            <div class="search-input-wrapper">
-              <input type="number" id="buscarIdChamado" placeholder="Informe o ID do chamado..." />
-              <button type="button" class="search-icon-btn" onclick="pesquisarChamadoPorId()">
-                <i class="bi bi-search"></i>
-              </button>
-            </div>
-          </div>
-
-          <form class="formulario id-search-form">
-            <div class="div_select">
-              <div class="idchamado">
-                <label for="editIdChamado">Id:</label>
-                <input type="text" id="editIdChamado" disabled placeholder="---" />
-              </div>
-              <div class="select-wrapper">
-                <label class="input-label-fix">Tipo do chamado:</label>
-                <select id="editTipoChamado" class="butons-top" required>
-                  <option value="" disabled selected>Selecione...</option>
-                  <option>Requisição</option>
-                  <option>Rotina do setor</option>
-                  <option>Incidente</option>
-                </select>
-              </div>
-              <div class="select-wrapper">
-                <label class="input-label-fix">Solicitante:</label>
-                <select id="editSolicitante" class="butons-top" required>
-                  <option value="" disabled selected>Selecione...</option>
-                </select>
-              </div>
-              <div class="select-wrapper">
-                <label class="input-label-fix">Status:</label>
-                <select id="editStatusChamado" class="butons-top" required>
-                  <option value="" disabled selected>Selecione...</option>
-                  <option>Concluído</option>
-                  <option>Pendente</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="div_select extra-info-row">
-              <div class="select-wrapper">
-                <label class="input-label-fix">Função:</label>
-                <input type="text" id="editFuncaoChamado" disabled class="input-readonly-style" />
-              </div>
-              <div class="select-wrapper">
-                <label class="input-label-fix">Data:</label>
-                <input type="text" id="editDataChamado" disabled class="input-readonly-style" />
-              </div>
-              <div class="select-wrapper">
-                <label class="input-label-fix">Hora:</label>
-                <input type="text" id="editHoraChamado" disabled class="input-readonly-style" />
-              </div>
-            </div>
-
-            <div class="div_descricao desc-textarea-row">
-              <div class="textarea-group">
-                <label class="input-label-fix">Descrição:</label>
-                <textarea id="editDescricao" rows="4"></textarea>
-              </div>
-              <div class="textarea-group">
-                <label class="input-label-fix">Informação extra:</label>
-                <textarea id="editInformacaoExtra" rows="4"></textarea>
-              </div>
-            </div>
-
-            <div class="actions-row">
-              <button type="button" onclick="salvarEdicaoChamado()" class="butons-bot btn-action-create">
-                <i class="bi bi-save-fill"></i> Salvar
-              </button>
-              <button type="button" onclick="limparTelaPesquisa()" class="butons-bot btn-action-list">
-                <i class="bi bi-x-circle"></i> Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <div class="form-area" id="metricas">
-        <div class="form-scrollable-container">
-          <div class="metricas-main">
-            <div class="metricas-header">
-              <h3 class="tipo">Métricas</h3>
-              <div class="filtro-datas">
-                <label for="data-inicial">De:</label>
-                <input type="text" id="data-inicial" placeholder="Selecione o período">
-                <button type="button" class="btn-aplicar" onclick="enviaDatas()">Aplicar</button>
-              </div>
-            </div>
-
-            <div class="cards-chamados">
-              <div class="card1">
-                <div class="card-icon-wrapper">
-                  <i class="bi bi-sort-up-alt"></i>
-                </div>
-                <div class="card-details">
-                  <p class="card-title">Total de chamados</p>
-                  <p class="card-value" id="total-chamados">-</p>
-                  <p class="card-period" id="periodo-selecionado">Nenhum período</p>
-                </div>
-                <div class="card-progress">
-                  <svg class="progress-ring" width="64" height="64">
-                    <circle class="progress-ring-track" stroke-width="5" fill="transparent" r="26" cx="32" cy="32" />
-                    <circle class="progress-ring-bar" stroke-width="5" fill="transparent" r="26" cx="32" cy="32" />
-                  </svg>
-                  <span class="card-percentage" id="porcentagem-chamados">0%</span>
-                </div>
-              </div>
-
-              <div class="card1">
-                <div class="card-icon-wrapper">
-                  <i class="bi bi-reception-4"></i>
-                </div>
-                <div class="card-details">
-                  <p class="card-title">Top 1 Solicitações</p>
-                  <p class="card-value" id="nome-solicitante">-</p>
-                  <p class="card-period" id="chamados-solicitante">0 chamados</p>
-                </div>
-                <div class="card-progress">
-                  <svg class="progress-ring" width="64" height="64">
-                    <circle class="progress-ring-track" stroke-width="5" fill="transparent" r="26" cx="32" cy="32" />
-                    <circle class="progress-ring-bar-solicitante" stroke-width="5" fill="transparent" r="26" cx="32"
-                      cy="32" />
-                  </svg>
-                  <span class="card-percentage" id="porcentagem-solicitante">0%</span>
-                </div>
-              </div>
-
-              <div class="card1">
-                <div class="card-icon-wrapper">
-                  <i class="bi bi-clipboard-check"></i>
-                </div>
-                <div class="card-details">
-                  <p class="card-title">Top 1 Tipo</p>
-                  <p class="card-value" id="nome-tipo">-</p>
-                  <p class="card-period" id="chamados-do-tipo">0 chamados</p>
-                </div>
-                <div class="card-progress">
-                  <svg class="progress-ring" width="64" height="64">
-                    <circle class="progress-ring-track" stroke-width="5" fill="transparent" r="26" cx="32" cy="32" />
-                    <circle class="progress-ring-bar-tipo" stroke-width="5" fill="transparent" r="26" cx="32" cy="32" />
-                  </svg>
-                  <span class="card-percentage" id="porcentagem-tipo">0%</span>
-                </div>
-              </div>
-            </div>
+        <div class="sidebar-notifications">
+          <span class="notif-title">NOTIFICAÇÕES</span>
+          <div class="bell-wrapper">
+            <i class="bi bi-bell-fill"></i>
+            <span id="badge-notificacao-mobile" class="mobile-bell-badge"
+              >0</span
+            >
           </div>
         </div>
-      </div>
 
-      <div class="form-area" id="telefone">
-        <div class="form-scrollable-container">
-          <div class="section-header">
-            <h3 class="tipo">Central de Chamados</h3>
-            <p class="section-subtitle">Criação e atendimento de chamados.</p>
-          </div>
-
-          <form class="formulario">
-            <div class="div_select">
-              <div class="idchamado">
-                <label for="idDoChamado">ID:</label>
-                <input type="text" id="idDoChamado" disabled placeholder="Aut." />
-              </div>
-              <div class="select-wrapper">
-                <select name="tipoDoChamado" id="tipoDoChamado" class="butons-top" required>
-                  <option value="" disabled selected>Tipo de chamado</option>
-                  <option>Requisição</option>
-                  <option>Rotina do setor</option>
-                  <option>Incidente</option>
-                </select>
-              </div>
-              <div class="select-wrapper">
-                <select name="solicitante" id="solicitante" class="butons-top" required>
-                  <option value="" disabled selected>Solicitante</option>
-                </select>
-              </div>
-              <div class="select-wrapper">
-                <select name="statusChamado" id="statusChamado" class="butons-top" required>
-                  <option value="" disabled selected>Status</option>
-                  <option>Concluído</option>
-                  <option>Pendente</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="div_descricao">
-              <input type="text" placeholder="Descrição do chamado" name="descricao" id="descricao" required />
-              <input type="text" name="upload" id="informacaoExtra" placeholder="Informação extra" />
-            </div>
-
-            <div class="actions-row">
-              <button type="button" onclick="enviaAoClicar()" class="butons-bot primary-btn" id="botaochamado">
-                <i class="bi bi-plus-circle-fill"></i> Registrar Chamado
-              </button>
-            </div>
-          </form>
-
-          <div class="divatabela">
-            <table id="tabela">
-              <thead>
-                <tr>
-                  <th style="width: 7%;">ID</th>
-                  <th style="width: 5%;">Status</th>
-                  <th style="width: 13%;">Tipo</th>
-                  <th style="width: 15%;">Solicitante</th>
-                  <th style="width: 10%;">Função</th>
-                  <th style="width: 25%;">Descrição</th>
-                  <th style="width: 15%;">Info Extra</th>
-                  <th style="width: 5%;">Hora</th>
-                  <th style="width: 5%;">Data</th>
-                </tr>
-              </thead>
-              <tbody id="tabela-chamados-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-area" id="cadastro">
-        <div class="form-scrollable-container">
-          <div class="section-header">
-            <h2 class="tipo-cadastro">Cadastro de Usuários</h2>
-            <p class="section-subtitle">Gerencie as permissões e adicione novos colaboradores ao portal.</p>
-          </div>
-
-          <div class="div_cadastro">
-            <input type="hidden" id="idUsuario">
-            <div class="input-group"><input type="text" placeholder="Nome" id="nome" required /></div>
-            <div class="input-group"><input type="text" placeholder="Sobrenome" id="sobrenome" required /></div>
-            <div class="input-group"><input type="text" placeholder="Função" id="funcao" required /></div>
-            <div class="input-group"><input type="text" id="cargo" placeholder="Cargo" required /></div>
-            <div class="input-group"><input type="text" id="usuario" placeholder="Usuário" /></div>
-            <div class="input-group"><input type="text" id="ramal" placeholder="Ramal" /></div>
-
-            <div class="input-group">
-              <select id="userPermissao" class="butons-top" onchange="verificarPermissaoSenha()" style="height: 38px; border-radius: 8px; color: var      (--cor-textoprincipal); background-color: var(--cor-fundoprincipal); border: 1px solid var(--cor-linhas); padding: 0 12px; outline: none;"  required>
-                <option value="" disabled selected>Permissão...</option>
-                <option value="admin">Admin</option>
-                <option value="cliente">Cliente</option>
-              </select>
-            </div>
-
-            <div class="input-group" id="containerSenhaUsuario" style="display: none;">
-              <input type="password" id="userSenha" placeholder="Senha do Admin" />
-            </div>
-          </div>
-
-          <div class="buttons-control-row">
-            <button type="button" onclick="salvarUsuario()" class="butons-bot btn-action-create"><i class="bi bi-person-plus-fill"></i> Criar</button>
-            <button type="button" onclick="lerDadosDosUsuarios()" class="butons-bot btn-action-list"><i class="bi bi-list-ul"></i> Listar</button>
-            <button type="button" onclick="deletarUsuario()" class="butons-bot btn-action-delete"><i class="bi bi-trash3-fill"></i> Deletar</button>
-          </div>
-
-          <div class="divtabelausuarios">
-            <table id="tabelausuarios">
-              <thead>
-                <tr>
-                  <th style="width: 20%;">Nome</th>
-                  <th style="width: 20%;">Sobrenome</th>
-                  <th style="width: 20%;">Função</th>
-                  <th style="width: 20%;">Cargo</th>
-                  <th style="width: 12%;">Usuário</th>
-                  <th style="width: 8%;">Ramal</th>
-                </tr>
-              </thead>
-              <tbody id="tabela-usuarios-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-area" id="tarefas-aba">
-        <div class="form-scrollable-container">
-          <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <h3 class="tipo">Lista de Tarefas</h3>
-              <p class="section-subtitle">Gerencie as rotinas que disparam a criação automática de chamados.</p>
-            </div>
-            <button type="button" class="butons-bot" onclick="abrirModalTarefa()" style="width: auto;">
-              <i class="bi bi-plus-lg"></i> Criar Tarefa
+        <div class="sidebar-footer">
+          <div class="sidebar-logout-container-pc">
+            <button type="button" onclick="fazerLogout()" class="btn-logout-pc">
+              <i class="bi bi-box-arrow-right"></i><span>Sair do Sistema</span>
             </button>
           </div>
-
-          <div class="divatabela">
-            <table id="tabelatarefas">
-              <thead>
-                <tr>
-                  <th style="width: 8%;">ID</th>
-                  <th style="width: 35%;">Descrição da Rotina</th>
-                  <th style="width: 12%;">Repetição</th>
-                  <th style="width: 15%;">Data Agendada</th>
-                  <th style="width: 10%;">Horário</th>
-                  <th style="width: 20%;">Responsável</th>
-                  <th style="width: 15%;">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="tabela-tarefas-body"></tbody>
-            </table>
-          </div>
+          <div class="version-label-pc">simao.dev v4.0</div>
         </div>
       </div>
 
-      <div class="form-area" id="buscaRamais">
-        <div class="form-scrollable-container">
-          <div class="section-header">
-            <h3 class="tipo">Pesquisar Ramais</h3>
-            <p class="section-subtitle">Busca de ramais da loja</p>
-          </div>
-
-          <div class="search-bar-container">
-            <label for="buscarIdChamado">Nome/setor:</label>
-            <div class="search-input-wrapper">
-              <input type="number" id="buscarIdChamado" placeholder="Informe o ID do chamado..." />
-              <button type="button" class="search-icon-btn" onclick="BuscaRamais()">
-                <i class="bi bi-search"></i>
+      <div class="funcoes">
+        <!-- ABA: CHAMADOS COM TABELA DE HISTÓRICO EXCLUSIVA -->
+        <div class="form-area" id="chamados">
+          <div class="form-scrollable-container">
+            <div
+              class="section-header"
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                margin-bottom: 20px;
+              "
+            >
+              <div>
+                <h3 class="tipo">Chamados</h3>
+                <p class="section-subtitle">
+                  Acompanhe seus chamados ou abra uma nova solicitação direto na
+                  plataforma.
+                </p>
+              </div>
+              <button
+                type="button"
+                class="butons-bot"
+                onclick="abrirModalNovoChamado()"
+                style="width: auto"
+              >
+                <i class="bi bi-plus-lg"></i> Criar novo chamado
               </button>
             </div>
-          </div>
 
-          <div class="formulario id-search-form">
+            <!-- NOVA TABELA DE HISTÓRICO DO USUÁRIO -->
+            <div
+              class="tabela-container"
+              style="
+                width: 100%;
+                overflow-x: auto;
+                background-color: var(--cor-fundoprincipal);
+                border: 1px solid var(--cor-linhas);
+                border-radius: 8px;
+              "
+            >
+              <table
+                style="
+                  width: 100%;
+                  border-collapse: collapse;
+                  text-align: left;
+                  font-size: 13px;
+                "
+              >
+                <thead>
+                  <tr
+                    style="
+                      background-color: rgba(15, 23, 42, 0.6);
+                      color: var(--text-color-faded);
+                      border-bottom: 1px solid var(--cor-linhas);
+                    "
+                  >
+                    <th style="padding: 12px 16px; font-weight: 600">ID</th>
+                    <th style="padding: 12px 16px; font-weight: 600">Tipo</th>
+                    <th style="padding: 12px 16px; font-weight: 600">
+                      Descrição
+                    </th>
+                    <th style="padding: 12px 16px; font-weight: 600">Data</th>
+                    <th style="padding: 12px 16px; font-weight: 600">Hora</th>
+                    <th style="padding: 12px 16px; font-weight: 600">Status</th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="tabela-chamados-cliente-body"
+                  style="color: var(--cor-textoprincipal)"
+                >
+                  <tr>
+                    <td
+                      colspan="6"
+                      style="
+                        text-align: center;
+                        padding: 24px;
+                        color: var(--text-color-faded);
+                      "
+                    >
+                      Carregando seu histórico de chamados...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-area" id="pesquisa">
+          <div class="form-scrollable-container">
+            <div class="section-header">
+              <h3 class="tipo">Pesquisar chamado</h3>
+              <p class="section-subtitle">
+                Busque por um ID para visualizar, editar ou atualizar os
+                detalhes do ticket.
+              </p>
+            </div>
+
+            <div class="search-bar-container">
+              <label for="buscarIdChamado">ID do Chamado:</label>
+              <div class="search-input-wrapper">
+                <input
+                  type="number"
+                  id="buscarIdChamado"
+                  placeholder="Informe o ID do chamado..."
+                />
+                <button
+                  type="button"
+                  class="search-icon-btn"
+                  onclick="pesquisarChamadoPorId()"
+                >
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+            </div>
+
+            <form class="formulario id-search-form">
+              <div class="div_select">
+                <div class="idchamado">
+                  <label for="editIdChamado">Id:</label>
+                  <input
+                    type="text"
+                    id="editIdChamado"
+                    disabled
+                    placeholder="---"
+                  />
+                </div>
+                <div class="select-wrapper">
+                  <label class="input-label-fix">Tipo do chamado:</label>
+                  <select id="editTipoChamado" class="butons-top" required>
+                    <option value="" disabled selected>Selecione...</option>
+                    <option>Requisição</option>
+                    <option>Rotina do setor</option>
+                    <option>Incidente</option>
+                  </select>
+                </div>
+                <div class="select-wrapper">
+                  <label class="input-label-fix">Solicitante:</label>
+                  <select id="editSolicitante" class="butons-top" required>
+                    <option value="" disabled selected>Selecione...</option>
+                  </select>
+                </div>
+                <div class="select-wrapper">
+                  <label class="input-label-fix">Status:</label>
+                  <select id="editStatusChamado" class="butons-top" required>
+                    <option value="" disabled selected>Selecione...</option>
+                    <option>Concluído</option>
+                    <option>Pendente</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="div_select extra-info-row">
+                <div class="select-wrapper">
+                  <label class="input-label-fix">Função:</label>
+                  <input
+                    type="text"
+                    id="editFuncaoChamado"
+                    disabled
+                    class="input-readonly-style"
+                  />
+                </div>
+                <div class="select-wrapper">
+                  <label class="input-label-fix">Data:</label>
+                  <input
+                    type="text"
+                    id="editDataChamado"
+                    disabled
+                    class="input-readonly-style"
+                  />
+                </div>
+                <div class="select-wrapper">
+                  <label class="input-label-fix">Hora:</label>
+                  <input
+                    type="text"
+                    id="editHoraChamado"
+                    disabled
+                    class="input-readonly-style"
+                  />
+                </div>
+              </div>
+              <div class="div_select extra-info-row" style="margin-top: 16px">
+                <div class="select-wrapper" style="flex: 1">
+                  <label class="input-label-fix">Tipo de Repetição:</label>
+                  <input
+                    type="text"
+                    id="editRepeticaoChamado"
+                    disabled
+                    class="input-readonly-style"
+                    placeholder="---"
+                  />
+                </div>
+                <div class="select-wrapper" style="flex: 2">
+                  <label class="input-label-fix">Informação Extra:</label>
+                  <input
+                    type="text"
+                    id="editInformacaoExtra"
+                    disabled
+                    class="input-readonly-style"
+                    placeholder="---"
+                  />
+                </div>
+              </div>
+              <div
+                class="div_descricao desc-textarea-row"
+                style="margin-top: 16px"
+              >
+                <div class="textarea-group">
+                  <label class="input-label-fix">Descrição:</label>
+                  <textarea id="editDescricao" rows="4"></textarea>
+                </div>
+                <div class="textarea-group">
+                  <label class="input-label-fix"
+                    >Comando / Instrução Técnica:</label
+                  >
+                  <textarea
+                    id="editComandoChamado"
+                    rows="4"
+                    placeholder="Passo a passo técnico ou diretriz de execução..."
+                  ></textarea>
+                </div>
+              </div>
+
+              <div class="actions-row">
+                <button
+                  type="button"
+                  onclick="salvarEdicaoChamado()"
+                  class="butons-bot btn-action-create"
+                >
+                  <i class="bi bi-save-fill"></i> Salvar
+                </button>
+                <button
+                  type="button"
+                  onclick="limparTelaPesquisa()"
+                  class="butons-bot btn-action-list"
+                >
+                  <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="form-area" id="metricas">
+          <div class="form-scrollable-container">
+            <div class="metricas-main">
+              <div class="metricas-header">
+                <h3 class="tipo">Métricas</h3>
+                <div class="filtro-datas">
+                  <label for="data-inicial">De:</label>
+                  <input
+                    type="text"
+                    id="data-inicial"
+                    placeholder="Selecione o período"
+                  />
+                  <button
+                    type="button"
+                    class="btn-aplicar"
+                    onclick="enviaDatas()"
+                  >
+                    Aplicar
+                  </button>
+                </div>
+              </div>
+
+              <div class="cards-chamados">
+                <div class="card1">
+                  <div class="card-icon-wrapper">
+                    <i class="bi bi-sort-up-alt"></i>
+                  </div>
+                  <div class="card-details">
+                    <p class="card-title">Total de chamados</p>
+                    <p class="card-value" id="total-chamados">-</p>
+                    <p class="card-period" id="periodo-selecionado">
+                      Nenhum período
+                    </p>
+                  </div>
+                  <div class="card-progress">
+                    <svg class="progress-ring" width="64" height="64">
+                      <circle
+                        class="progress-ring-track"
+                        stroke-width="5"
+                        fill="transparent"
+                        r="26"
+                        cx="32"
+                        cy="32"
+                      />
+                      <circle
+                        class="progress-ring-bar"
+                        stroke-width="5"
+                        fill="transparent"
+                        r="26"
+                        cx="32"
+                        cy="32"
+                      />
+                    </svg>
+                    <span class="card-percentage" id="porcentagem-chamados"
+                      >0%</span
+                    >
+                  </div>
+                </div>
+
+                <div class="card1">
+                  <div class="card-icon-wrapper">
+                    <i class="bi bi-reception-4"></i>
+                  </div>
+                  <div class="card-details">
+                    <p class="card-title">Top 1 Solicitações</p>
+                    <p class="card-value" id="nome-solicitante">-</p>
+                    <p class="card-period" id="chamados-solicitante">
+                      0 chamados
+                    </p>
+                  </div>
+                  <div class="card-progress">
+                    <svg class="progress-ring" width="64" height="64">
+                      <circle
+                        class="progress-ring-track"
+                        stroke-width="5"
+                        fill="transparent"
+                        r="26"
+                        cx="32"
+                        cy="32"
+                      />
+                      <circle
+                        class="progress-ring-bar-solicitante"
+                        stroke-width="5"
+                        fill="transparent"
+                        r="26"
+                        cx="32"
+                        cy="32"
+                      />
+                    </svg>
+                    <span class="card-percentage" id="porcentagem-solicitante"
+                      >0%</span
+                    >
+                  </div>
+                </div>
+
+                <div class="card1">
+                  <div class="card-icon-wrapper">
+                    <i class="bi bi-clipboard-check"></i>
+                  </div>
+                  <div class="card-details">
+                    <p class="card-title">Top 1 Tipo</p>
+                    <p class="card-value" id="nome-tipo">-</p>
+                    <p class="card-period" id="chamados-do-tipo">0 chamados</p>
+                  </div>
+                  <div class="card-progress">
+                    <svg class="progress-ring" width="64" height="64">
+                      <circle
+                        class="progress-ring-track"
+                        stroke-width="5"
+                        fill="transparent"
+                        r="26"
+                        cx="32"
+                        cy="32"
+                      />
+                      <circle
+                        class="progress-ring-bar-tipo"
+                        stroke-width="5"
+                        fill="transparent"
+                        r="26"
+                        cx="32"
+                        cy="32"
+                      />
+                    </svg>
+                    <span class="card-percentage" id="porcentagem-tipo"
+                      >0%</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-area" id="telefone">
+          <div class="form-scrollable-container">
+            <div class="section-header">
+              <h3 class="tipo">Central de Chamados</h3>
+              <p class="section-subtitle">Criação e atendimento de chamados.</p>
+            </div>
+            <form class="formulario">
+              <div class="div_select">
+                <div class="idchamado">
+                  <label for="idDoChamado">ID:</label>
+                  <input
+                    type="text"
+                    id="idDoChamado"
+                    disabled
+                    placeholder="Aut."
+                  />
+                </div>
+                <div class="select-wrapper">
+                  <select
+                    name="tipoDoChamado"
+                    id="tipoDoChamado"
+                    class="butons-top"
+                    required
+                  >
+                    <option value="" disabled selected>Tipo de chamado</option>
+                    <option>Requisição</option>
+                    <option>Rotina do setor</option>
+                    <option>Incidente</option>
+                  </select>
+                </div>
+                <div class="select-wrapper">
+                  <select
+                    name="solicitante"
+                    id="solicitante"
+                    class="butons-top"
+                    required
+                  >
+                    <option value="" disabled selected>Solicitante</option>
+                  </select>
+                </div>
+                <div class="select-wrapper">
+                  <select
+                    name="statusChamado"
+                    id="statusChamado"
+                    class="butons-top"
+                    required
+                  >
+                    <option value="" disabled selected>Status</option>
+                    <option>Concluído</option>
+                    <option>Pendente</option>
+                  </select>
+                </div>
+              </div>
+              <div class="div_descricao">
+                <input
+                  type="text"
+                  placeholder="Descrição do chamado"
+                  name="descricao"
+                  id="descricao"
+                  required
+                />
+                <input
+                  type="text"
+                  name="upload"
+                  id="informacaoExtra"
+                  placeholder="Informação extra"
+                />
+              </div>
+              <div class="actions-row">
+                <button
+                  type="button"
+                  onclick="enviaAoClicar()"
+                  class="butons-bot primary-btn"
+                  id="botaochamado"
+                >
+                  <i class="bi bi-plus-circle-fill"></i> Registrar Chamado
+                </button>
+              </div>
+            </form>
+            <div class="divatabela">
+              <table id="tabela">
+                <thead>
+                  <tr>
+                    <th style="width: 7%">ID</th>
+                    <th style="width: 5%">Status</th>
+                    <th style="width: 13%">Tipo</th>
+                    <th style="width: 15%">Solicitante</th>
+                    <th style="width: 10%">Função</th>
+                    <th style="width: 25%">Descrição</th>
+                    <th style="width: 15%">Info Extra</th>
+                    <th style="width: 5%">Hora</th>
+                    <th style="width: 5%">Data</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-chamados-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="form-area" id="cadastro">
+          <div class="form-scrollable-container">
+            <div class="section-header">
+              <h2 class="tipo-cadastro">Cadastro de Usuários</h2>
+              <p class="section-subtitle">
+                Gerencie as permissões e adicione novos colaboradores ao portal.
+              </p>
+            </div>
+            <div class="div_cadastro">
+              <input type="hidden" id="idUsuario" />
+              <div class="input-group">
+                <input type="text" placeholder="Nome" id="nome" required />
+              </div>
+              <div class="input-group">
+                <input
+                  type="text"
+                  placeholder="Sobrenome"
+                  id="sobrenome"
+                  required
+                />
+              </div>
+              <div class="input-group">
+                <input type="text" placeholder="Função" id="funcao" required />
+              </div>
+              <div class="input-group">
+                <input type="text" id="cargo" placeholder="Cargo" required />
+              </div>
+              <div class="input-group">
+                <input type="text" id="usuario" placeholder="Usuário" />
+              </div>
+              <div class="input-group">
+                <input type="text" id="ramal" placeholder="Ramal" />
+              </div>
+              <div class="input-group">
+                <select
+                  id="userPermissao"
+                  class="butons-top"
+                  onchange="verificarPermissaoSenha()"
+                  style="
+                    height: 38px;
+                    border-radius: 8px;
+                    color: var (--cor-textoprincipal);
+                    background-color: var(--cor-fundoprincipal);
+                    border: 1px solid var(--cor-linhas);
+                    padding: 0 12px;
+                    outline: none;
+                  "
+                  required
+                >
+                  <option value="" disabled selected>Permissão...</option>
+                  <option value="admin">Admin</option>
+                  <option value="cliente">Cliente</option>
+                </select>
+              </div>
+              <div
+                class="input-group"
+                id="containerSenhaUsuario"
+                style="display: none"
+              >
+                <input
+                  type="password"
+                  id="userSenha"
+                  placeholder="Senha do Admin"
+                />
+              </div>
+            </div>
+            <div class="buttons-control-row">
+              <button
+                type="button"
+                onclick="salvarUsuario()"
+                class="butons-bot btn-action-create"
+              >
+                <i class="bi bi-person-plus-fill"></i> Criar
+              </button>
+              <button
+                type="button"
+                onclick="lerDadosDosUsuarios()"
+                class="butons-bot btn-action-list"
+              >
+                <i class="bi bi-list-ul"></i> Listar
+              </button>
+              <button
+                type="button"
+                onclick="deletarUsuario()"
+                class="butons-bot btn-action-delete"
+              >
+                <i class="bi bi-trash3-fill"></i> Deletar
+              </button>
+            </div>
             <div class="divtabelausuarios">
               <table id="tabelausuarios">
                 <thead>
                   <tr>
-                    <th style="width: 20%;">Nome</th>
-                    <th style="width: 20%;">Sobrenome</th>
-                    <th style="width: 8%;">Ramal</th>
+                    <th style="width: 20%">Nome</th>
+                    <th style="width: 20%">Sobrenome</th>
+                    <th style="width: 20%">Função</th>
+                    <th style="width: 20%">Cargo</th>
+                    <th style="width: 12%">Usuário</th>
+                    <th style="width: 8%">Ramal</th>
                   </tr>
                 </thead>
                 <tbody id="tabela-usuarios-body"></tbody>
@@ -440,161 +676,1066 @@
             </div>
           </div>
         </div>
+        <div class="form-area" id="tarefas-aba">
+          <div class="form-scrollable-container">
+            <div
+              class="section-header"
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <div>
+                <h3 class="tipo">Lista de Tarefas</h3>
+                <p class="section-subtitle">
+                  Gerencie as rotinas que disparam a criação automática de
+                  chamados.
+                </p>
+              </div>
+              <button
+                type="button"
+                class="butons-bot"
+                onclick="abrirModalTarefa()"
+                style="width: auto"
+              >
+                <i class="bi bi-plus-lg"></i> Criar Tarefa
+              </button>
+            </div>
+            <div class="divatabela">
+              <table id="tabelatarefas">
+                <thead>
+                  <tr>
+                    <th style="width: 6%">ID</th>
+                    <th style="width: 14%">Rotina</th>
+                    <th style="width: 20%">Descrição da Tarefa</th>
+                    <th style="width: 15%">Comando / Instrução</th>
+                    <th style="width: 10%">Repetição</th>
+                    <th style="width: 12%">Data Agendada</th>
+                    <th style="width: 8%">Horário</th>
+                    <th style="width: 15%">Responsável</th>
+                    <th style="width: 10%">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-tarefas-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="form-area" id="rotinas-aba-cliente">
+          <div class="form-scrollable-container">
+            <div class="section-header">
+              <h3 class="tipo">Status das Rotinas</h3>
+              <p class="section-subtitle">
+                Monitore a execução das principais rotinas do setor no dia de
+                hoje e anteriores.
+              </p>
+            </div>
+            <div
+              id="container-regras-rotinas"
+              class="cards-chamados"
+              style="margin-top: 10px"
+            ></div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end;
+                margin-top: 24px;
+                margin-bottom: 12px;
+                flex-wrap: wrap;
+                gap: 12px;
+              "
+            >
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label
+                  for="inputDataBuscaRotina"
+                  style="
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: var(--text-color-faded);
+                    text-transform: uppercase;
+                  "
+                  >Digitar data para pesquisar</label
+                >
+                <div style="display: flex; gap: 8px">
+                  <input
+                    type="date"
+                    id="inputDataBuscaRotina"
+                    class="input-readonly-style"
+                    style="
+                      background-color: var(--cor-fundoprincipal) !important;
+                      color: white !important;
+                      height: 38px;
+                      width: 170px;
+                    "
+                  />
+                  <button
+                    type="button"
+                    class="butons-bot"
+                    onclick="buscarRotinaPorData()"
+                    style="height: 38px; padding: 0 14px"
+                  >
+                    <i class="bi bi-search"></i> Buscar
+                  </button>
+                </div>
+              </div>
+              <div style="text-align: right">
+                <span
+                  style="
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: var(--text-color-faded);
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                  "
+                >
+                  <i class="bi bi-calendar-event"></i> Buscar por Data
+                </span>
+              </div>
+            </div>
+            <div style="margin-top: 8px">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 12px;
+                "
+              >
+                <h4
+                  id="titulo-secao-historico"
+                  style="
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--text-color-light);
+                    margin: 0;
+                  "
+                >
+                  Últimas 5 Rotinas Anteriores
+                </h4>
+                <button
+                  type="button"
+                  id="btnRestaurarHistorico"
+                  onclick="carregarHistoricoRotinas()"
+                  style="
+                    display: none;
+                    background: none;
+                    border: none;
+                    color: var(--cor-primaria);
+                    font-size: 12px;
+                    cursor: pointer;
+                    text-decoration: underline;
+                  "
+                >
+                  Ver últimas 5 rotinas
+                </button>
+              </div>
+              <div
+                id="container-historico-rotinas"
+                class="cards-chamados"
+                style="gap: 12px"
+              ></div>
+            </div>
+          </div>
+        </div>
       </div>
-
     </div>
-  </div>
-
-  <div id="sino-notificacao-container-pc" class="sino-flutuante-pc">
-    <i class="bi bi-bell-fill"></i>
-    <span id="badge-notificacao" class="notification-badge-sino-pc">0</span>
-  </div>
-
-  <div id="customAlertModal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="modal-icon"><i class="bi bi-exclamation-circle-fill"></i></div>
-      <p id="customAlertMessage">Mensagem do sistema</p>
-      <button class="modal-btn" onclick="fecharModalAlerta()">OK</button>
+    <div id="sino-notificacao-container-pc" class="sino-flutuante-pc">
+      <i class="bi bi-bell-fill"></i>
+      <span id="badge-notificacao" class="notification-badge-sino-pc">0</span>
     </div>
-  </div>
-
-  <div id="loadingModal" class="modal-overlay loading-overlay">
-    <div class="loader-content">
-      <div class="spinner"></div>
-      <p>Processando, por favor aguarde...</p>
-    </div>
-  </div>
-
-  <div id="taskModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content"
-      style="max-width: 540px; padding: 24px; text-align: left; background-color: var(--cor-cardescaixas); border: 1px solid var(--cor-linhas); border-radius: 16px;">
-      <h3 id="taskModalTitle"
-        style="font-size: 22px; font-weight: 700; color: var(--text-color-light); margin: 0 0 16px 0; letter-spacing: -0.02em;">
-        Criar Tarefa</h3>
-      <form id="taskForm" onsubmit="event.preventDefault(); salvarTarefa();"
-        style="display: flex; flex-direction: column; gap: 14px;">
-        <input type="hidden" id="idTarefa" />
-
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 600; color: var(--text-color-faded); text-transform: uppercase; letter-spacing: 0.05em;">Descrição da Tarefa</label>
-          <input type="text" id="taskDescricao" placeholder="Ex: Verificar backups periódicos" required
-                 style="width: 100%; height: 38px; background-color: var(--cor-fundoprincipal); border: 1px solid var(--cor-linhas); color: white; border-radius: 8px; padding: 0 12px; box-sizing: border-box; font-size: 13.5px; outline: none;" />
+    <div id="customAlertModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-icon">
+          <i class="bi bi-exclamation-circle-fill"></i>
         </div>
-
-        <div style="display: flex; gap: 16px; width: 100%;">
-          <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
-            <label style="font-size: 11px; font-weight: 600; color: var(--text-color-faded); text-transform: uppercase; letter-spacing: 0.05em;">Tipo de Repetição</label>
-            <select id="taskRepeticao" class="butons-top" onchange="verificarTipoRepeticao()" style="height: 38px; box-sizing: border-box;">
-              <option value="Diaria">Diária</option>
-              <option value="Mensal">Mensal</option>
-            </select>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
-            <label style="font-size: 11px; font-weight: 600; color: var(--text-color-faded); text-transform: uppercase; letter-spacing: 0.05em;">Data</label>
-            <input type="text" id="taskData" placeholder="Todos os dias"
-                   style="width: 100%; height: 38px; background-color: var(--cor-fundoprincipal); border: 1px solid var(--cor-linhas); color: var(--text-color-faded); border-radius: 8px; padding: 0 12px; box-sizing: border-box; font-size: 13.5px; outline: none;" />
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 16px; width: 100%;">
-          <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
-            <label style="font-size: 11px; font-weight: 600; color: var(--text-color-faded); text-transform: uppercase; letter-spacing: 0.05em;">Hora</label>
-            <input type="time" id="taskHora" required
-                   style="width: 100%; height: 38px; background-color: var(--cor-fundoprincipal); border: 1px solid var(--cor-linhas); color: white; border-radius: 8px; padding: 0 12px; box-sizing: border-box; font-size: 13.5px; outline: none;" />
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
-            <label style="font-size: 11px; font-weight: 600; color: var(--text-color-faded); text-transform: uppercase; letter-spacing: 0.05em;">Designar para</label>
-            <select id="taskResponsavel" class="butons-top" required style="height: 38px; box-sizing: border-box;">
-              <option value="" disabled selected>Selecione...</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
-          <button type="submit" class="modal-btn" style="background-color: var(--cor-primaria); min-width: 100px; height: 38px; font-size: 13.5px; font-weight: 600; border-radius: 8px;">Salvar</button>
-          <button type="button" class="modal-btn" onclick="fecharModalTarefa()" style="background-color: #334155; color: #f1f5f9; min-width: 100px; height: 38px; font-size: 13.5px; font-weight: 600; border-radius: 8px;">Cancelar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div id="confirmDeleteModal" class="modal-overlay" style="display: none; z-index: 10005;">
-    <div class="modal-content" style="max-width: 400px; padding: 24px; text-align: center;">
-      <div class="modal-icon" style="color: var(--cor-acaoalerta);"><i class="bi bi-trash-fill"></i></div>
-      <h3 style="color: var(--text-color-light); margin: 0 0 10px 0;">Excluir Tarefa?</h3>
-      <p style="color: var(--text-color-faded); font-size: 14px; margin-bottom: 24px;">Deseja realmente excluir esta
-        tarefa de automação? Esta ação não poderá ser desfeita.</p>
-      <div style="display: flex; gap: 12px; justify-content: center;">
-        <button id="btnConfirmarExclusao" class="modal-btn" style="background-color: var(--cor-acaoalerta);">Sim, Excluir</button>
-        <button class="modal-btn" onclick="fecharModalConfirmacao()" style="background-color: var(--cor-secundaria);">Cancelar</button>
+        <p id="customAlertMessage">Mensagem do sistema</p>
+        <button class="modal-btn" onclick="fecharModalAlerta()">OK</button>
       </div>
     </div>
-  </div>
-
-  <div id="novoChamadoModal" class="modal-overlay" style="display: none; z-index: 10002;">
-    <div class="modal-content"
-      style="max-width: 500px; padding: 24px; text-align: left; background-color: var(--cor-cardescaixas); border: 1px solid var(--cor-linhas); border-radius: 16px;">
-
-      <h3
-        style="font-size: 20px; font-weight: 700; color: var(--text-color-light); margin: 0 0 6px 0; letter-spacing: -0.02em;">
-        Abrir Nova Solicitação</h3>
-      <p style="font-size: 13px; color: var(--text-color-faded); margin: 0 0 20px 0;">Preencha os dados abaixo para
-        enviar sua solicitação para a equipe técnica.</p>
-
-      <form id="formNovoChamado" onsubmit="event.preventDefault(); salvarNovoChamado();"
-        style="display: flex; flex-direction: column; gap: 16px;">
-
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 600; color: var(--text-color-faded); text-transform: uppercase; letter-spacing: 0.05em;">Solicitante</label>
-          <input type="text" id="ncUsuarioLogado" disabled style="width: 100%; height: 38px; background-color: rgba(15, 23, 42, 0.4); border: 1px solid var(--cor-linhas); color: var(--text-color-faded); border-radius: 8px; padding: 0 12px; box-sizing: border-box; font-size: 13.5px; outline: none;" />
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 600; color: var(--text-color-faded); text-transform: uppercase; letter-spacing: 0.05em;">Descrição do Chamado</label>
-          <textarea id="ncDescricao" rows="4" placeholder="Descreva detalhadamente o que precisa ou o problema que está enfrentando..." required style="width: 100%; background-color: var(--cor-fundoprincipal); border: 1px solid var(--cor-linhas); color: white; border-radius: 8px; padding: 12px; box-sizing: border-box; font-size: 13.5px; outline: none; font-family: inherit; resize: vertical;"></textarea>
-        </div>
-
-        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
-          <button type="submit" class="modal-btn" style="background-color: var(--cor-primaria); min-width: 100px; height: 38px; font-size: 13.5px; font-weight: 600; border-radius: 8px; color: white; border: none; cursor: pointer;">
-          Enviar
-        </button>
-          <button type="button" class="modal-btn" onclick="fecharModalNovoChamado()" style="background-color: #334155; color: #f1f5f9; min-width: 100px; height: 38px; font-size: 13.5px; font-weight: 600; border-radius: 8px; border: none; cursor: pointer;">
-          Cancelar
-        </button>
-        </div>
-      </form>
-
+    <div id="loadingModal" class="modal-overlay loading-overlay">
+      <div class="loader-content">
+        <div class="spinner"></div>
+        <p>Processando, por favor aguarde...</p>
+      </div>
     </div>
-  </div>
 
-  <div id="confirmModal" class="modal-overlay" style="display: none; z-index: 10005;">
-    <div class="modal-content"
-      style="max-width: 400px; padding: 24px; text-align: center; background-color: var(--cor-cardescaixas); border: 1px solid var(--cor-linhas); border-radius: 16px;">
-
+    <!-- MODAL DE TAREFAS ATUALIZADO COM O CAMPO ROTINA -->
+    <div id="taskModal" class="modal-overlay" style="display: none">
       <div
-        style="width: 56px; height: 56px; background-color: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 16px auto;">
-        <i class="bi bi-exclamation-triangle" style="font-size: 24px; color: var(--cor-acaoalerta);"></i>
+        class="modal-content"
+        style="
+          max-width: 540px;
+          padding: 24px;
+          text-align: left;
+          background-color: var(--cor-cardescaixas);
+          border: 1px solid var(--cor-linhas);
+          border-radius: 16px;
+        "
+      >
+        <h3
+          id="taskModalTitle"
+          style="
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-color-light);
+            margin: 0 0 16px 0;
+            letter-spacing: -0.02em;
+          "
+        >
+          Criar Tarefa
+        </h3>
+        <form
+          id="taskForm"
+          onsubmit="
+            event.preventDefault();
+            salvarTarefa();
+          "
+          style="display: flex; flex-direction: column; gap: 14px"
+        >
+          <input type="hidden" id="idTarefa" />
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-color-faded);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+              "
+              >Rotina</label
+            >
+            <input
+              type="text"
+              id="taskRotinaNome"
+              placeholder="Ex: Backup do Sistema / Abertura CPD"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                background-color: var(--cor-fundoprincipal);
+                border: 1px solid var(--cor-linhas);
+                color: white;
+                border-radius: 8px;
+                padding: 0 12px;
+                box-sizing: border-box;
+                font-size: 13.5px;
+                outline: none;
+              "
+            />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-color-faded);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+              "
+              >Descrição da Tarefa</label
+            >
+            <input
+              type="text"
+              id="taskDescricao"
+              placeholder="Ex: Verificar backups periódicos"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                background-color: var(--cor-fundoprincipal);
+                border: 1px solid var(--cor-linhas);
+                color: white;
+                border-radius: 8px;
+                padding: 0 12px;
+                box-sizing: border-box;
+                font-size: 13.5px;
+                outline: none;
+              "
+            />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-color-faded);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+              "
+              >Comando / Instrução</label
+            >
+            <textarea
+              id="taskComando"
+              placeholder="Passo a passo técnico ou comando a ser executado..."
+              rows="2"
+              required
+              style="
+                width: 100%;
+                background-color: var(--cor-fundoprincipal);
+                border: 1px solid var(--cor-linhas);
+                color: white;
+                border-radius: 8px;
+                padding: 8px 12px;
+                box-sizing: border-box;
+                font-size: 13.5px;
+                outline: none;
+                font-family: inherit;
+                resize: none;
+              "
+            ></textarea>
+          </div>
+          <div style="display: flex; gap: 16px; width: 100%">
+            <div
+              style="display: flex; flex-direction: column; gap: 6px; flex: 1"
+            >
+              <label
+                style="
+                  font-size: 11px;
+                  font-weight: 600;
+                  color: var(--text-color-faded);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+                >Tipo de Repetição</label
+              >
+              <select
+                id="taskRepeticao"
+                class="butons-top"
+                onchange="verificarTipoRepeticao()"
+                style="height: 38px; box-sizing: border-box"
+              >
+                <option value="Diaria">Diária</option>
+                <option value="Mensal">Mensal</option>
+              </select>
+            </div>
+            <div
+              style="display: flex; flex-direction: column; gap: 6px; flex: 1"
+            >
+              <label
+                style="
+                  font-size: 11px;
+                  font-weight: 600;
+                  color: var(--text-color-faded);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+                >Data</label
+              >
+              <input
+                type="text"
+                id="taskData"
+                placeholder="Todos os dias"
+                style="
+                  width: 100%;
+                  height: 38px;
+                  background-color: var(--cor-fundoprincipal);
+                  border: 1px solid var(--cor-linhas);
+                  color: var(--text-color-faded);
+                  border-radius: 8px;
+                  padding: 0 12px;
+                  box-sizing: border-box;
+                  font-size: 13.5px;
+                  outline: none;
+                "
+              />
+            </div>
+          </div>
+          <div style="display: flex; gap: 16px; width: 100%">
+            <div
+              style="display: flex; flex-direction: column; gap: 6px; flex: 1"
+            >
+              <label
+                style="
+                  font-size: 11px;
+                  font-weight: 600;
+                  color: var(--text-color-faded);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+                >Hora</label
+              >
+              <input
+                type="time"
+                id="taskHora"
+                required
+                style="
+                  width: 100%;
+                  height: 38px;
+                  background-color: var(--cor-fundoprincipal);
+                  border: 1px solid var(--cor-linhas);
+                  color: white;
+                  border-radius: 8px;
+                  padding: 0 12px;
+                  box-sizing: border-box;
+                  font-size: 13.5px;
+                  outline: none;
+                "
+              />
+            </div>
+            <div
+              style="display: flex; flex-direction: column; gap: 6px; flex: 1"
+            >
+              <label
+                style="
+                  font-size: 11px;
+                  font-weight: 600;
+                  color: var(--text-color-faded);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+                >Designar para</label
+              >
+              <select
+                id="taskResponsavel"
+                class="butons-top"
+                required
+                style="height: 38px; box-sizing: border-box"
+              >
+                <option value="" disabled selected>Selecione...</option>
+              </select>
+            </div>
+          </div>
+          <div
+            style="
+              display: flex;
+              gap: 12px;
+              justify-content: flex-end;
+              margin-top: 10px;
+            "
+          >
+            <button
+              type="submit"
+              class="modal-btn"
+              style="
+                background-color: var(--cor-primaria);
+                min-width: 100px;
+                height: 38px;
+                font-size: 13.5px;
+                font-weight: 600;
+                border-radius: 8px;
+              "
+            >
+              Salvar
+            </button>
+            <button
+              type="button"
+              class="modal-btn"
+              onclick="fecharModalTarefa()"
+              style="
+                background-color: #334155;
+                color: #f1f5f9;
+                min-width: 100px;
+                height: 38px;
+                font-size: 13.5px;
+                font-weight: 600;
+                border-radius: 8px;
+              "
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
       </div>
-
-      <h3 id="confirmModalTitle"
-        style="font-size: 18px; font-weight: 700; color: var(--text-color-light); margin: 0 0 8px 0;">Confirmar Exclusão
-      </h3>
-      <p id="confirmModalMessage"
-        style="font-size: 13px; color: var(--text-color-faded); margin: 0 0 24px 0; line-height: 1.5;">Você tem certeza
-        que deseja realizar esta ação? Essa operação não poderá ser desfeita.</p>
-
-      <div style="display: flex; gap: 12px; justify-content: center;">
-        <button type="button" id="confirmModalBtnSim" class="modal-btn" style="background-color: var(--cor-acaoalerta); min-width: 100px; height: 38px; font-size: 13.5px; font-weight: 600; border-radius: 8px; color: white; border: none; cursor: pointer;">
-        Excluir
-      </button>
-        <button type="button" onclick="fecharConfirmModal()" class="modal-btn" style="background-color: #334155; color: #f1f5f9; min-width: 100px; height: 38px; font-size: 13.5px; font-weight: 600; border-radius: 8px; border: none; cursor: pointer;">
-        Cancelar
-      </button>
-      </div>
-
     </div>
-  </div>
+    <div
+      id="confirmDeleteModal"
+      class="modal-overlay"
+      style="display: none; z-index: 10005"
+    >
+      <div
+        class="modal-content"
+        style="max-width: 400px; padding: 24px; text-align: center"
+      >
+        <div class="modal-icon" style="color: var(--cor-acaoalerta)">
+          <i class="bi bi-trash-fill"></i>
+        </div>
+        <h3 style="color: var(--text-color-light); margin: 0 0 10px 0">
+          Excluir Tarefa?
+        </h3>
+        <p
+          style="
+            color: var(--text-color-faded);
+            font-size: 14px;
+            margin-bottom: 24px;
+          "
+        >
+          Deseja realmente excluir esta tarefa de automação? Esta ação não
+          poderá ser desfeita.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center">
+          <button
+            id="btnConfirmarExclusao"
+            class="modal-btn"
+            style="background-color: var(--cor-acaoalerta)"
+          >
+            Sim, Excluir
+          </button>
+          <button
+            class="modal-btn"
+            onclick="fecharModalConfirmacao()"
+            style="background-color: var(--cor-secundaria)"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+    <div
+      id="novoChamadoModal"
+      class="modal-overlay"
+      style="display: none; z-index: 10002"
+    >
+      <div
+        class="modal-content"
+        style="
+          max-width: 500px;
+          padding: 24px;
+          text-align: left;
+          background-color: var(--cor-cardescaixas);
+          border: 1px solid var(--cor-linhas);
+          border-radius: 16px;
+        "
+      >
+        <h3
+          style="
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-color-light);
+            margin: 0 0 6px 0;
+            letter-spacing: -0.02em;
+          "
+        >
+          Abrir Nova Solicitação
+        </h3>
+        <p
+          style="
+            font-size: 13px;
+            color: var(--text-color-faded);
+            margin: 0 0 20px 0;
+          "
+        >
+          Preencha os dados abaixo para enviar sua solicitação para a equipe
+          técnica.
+        </p>
+        <form
+          id="formNovoChamado"
+          onsubmit="
+            event.preventDefault();
+            salvarNovoChamado();
+          "
+          style="display: flex; flex-direction: column; gap: 16px"
+        >
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-color-faded);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+              "
+              >Solicitante</label
+            >
+            <input
+              type="text"
+              id="ncUsuarioLogado"
+              disabled
+              style="
+                width: 100%;
+                height: 38px;
+                background-color: rgba(15, 23, 42, 0.4);
+                border: 1px solid var(--cor-linhas);
+                color: var(--text-color-faded);
+                border-radius: 8px;
+                padding: 0 12px;
+                box-sizing: border-box;
+                font-size: 13.5px;
+                outline: none;
+              "
+            />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-color-faded);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+              "
+              >Descrição do Chamado</label
+            >
+            <textarea
+              id="ncDescricao"
+              rows="4"
+              placeholder="Descreva detalhadamente o que precisa ou o problema que está enfrentando..."
+              required
+              style="
+                width: 100%;
+                background-color: var(--cor-fundoprincipal);
+                border: 1px solid var(--cor-linhas);
+                color: white;
+                border-radius: 8px;
+                padding: 12px;
+                box-sizing: border-box;
+                font-size: 13.5px;
+                outline: none;
+                font-family: inherit;
+                resize: vertical;
+              "
+            ></textarea>
+          </div>
+          <div
+            style="
+              display: flex;
+              gap: 12px;
+              justify-content: flex-end;
+              margin-top: 10px;
+            "
+          >
+            <button
+              type="submit"
+              class="modal-btn"
+              style="
+                background-color: var(--cor-primaria);
+                min-width: 100px;
+                height: 38px;
+                font-size: 13.5px;
+                font-weight: 600;
+                border-radius: 8px;
+                color: white;
+                border: none;
+                cursor: pointer;
+              "
+            >
+              Enviar
+            </button>
+            <button
+              type="button"
+              class="modal-btn"
+              onclick="fecharModalNovoChamado()"
+              style="
+                background-color: #334155;
+                color: #f1f5f9;
+                min-width: 100px;
+                height: 38px;
+                font-size: 13.5px;
+                font-weight: 600;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+              "
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div
+      id="confirmModal"
+      class="modal-overlay"
+      style="display: none; z-index: 10005"
+    >
+      <div
+        class="modal-content"
+        style="
+          max-width: 400px;
+          padding: 24px;
+          text-align: center;
+          background-color: var(--cor-cardescaixas);
+          border: 1px solid var(--cor-linhas);
+          border-radius: 16px;
+        "
+      >
+        <div
+          style="
+            width: 56px;
+            height: 56px;
+            background-color: rgba(239, 68, 68, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 16px auto;
+          "
+        >
+          <i
+            class="bi bi-exclamation-triangle"
+            style="font-size: 24px; color: var(--cor-acaoalerta)"
+          ></i>
+        </div>
+        <h3
+          id="confirmModalTitle"
+          style="
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-color-light);
+            margin: 0 0 8px 0;
+          "
+        >
+          Confirmar Exclusão
+        </h3>
+        <p
+          id="confirmModalMessage"
+          style="
+            font-size: 13px;
+            color: var(--text-color-faded);
+            margin: 0 0 24px 0;
+            line-height: 1.5;
+          "
+        >
+          Você tem certeza que deseja realizar esta ação? Essa operação não
+          poderá ser desfeita.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center">
+          <button
+            type="button"
+            id="confirmModalBtnSim"
+            class="modal-btn"
+            style="
+              background-color: var(--cor-acaoalerta);
+              min-width: 100px;
+              height: 38px;
+              font-size: 13.5px;
+              font-weight: 600;
+              border-radius: 8px;
+              color: white;
+              border: none;
+              cursor: pointer;
+            "
+          >
+            Excluir
+          </button>
+          <button
+            type="button"
+            onclick="fecharConfirmModal()"
+            class="modal-btn"
+            style="
+              background-color: #334155;
+              color: #f1f5f9;
+              min-width: 100px;
+              height: 38px;
+              font-size: 13.5px;
+              font-weight: 600;
+              border-radius: 8px;
+              border: none;
+              cursor: pointer;
+            "
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- MODAL VISUALIZAR DETALHES DA ROTINA -->
+    <div
+      id="modalDetalhesRotina"
+      class="modal-overlay"
+      style="display: none; z-index: 10015"
+    >
+      <div
+        class="modal-content"
+        style="
+          max-width: 600px;
+          padding: 24px;
+          text-align: left;
+          background-color: var(--cor-cardescaixas);
+        "
+      >
+        <h3
+          style="
+            color: var(--text-color-light);
+            font-size: 20px;
+            margin-bottom: 4px;
+          "
+        >
+          Detalhes da Rotina
+        </h3>
+        <p
+          style="
+            font-size: 13px;
+            color: var(--text-color-faded);
+            margin-bottom: 16px;
+          "
+        >
+          Lista de checagem técnica e status das tarefas.
+        </p>
+        <div
+          style="
+            display: flex;
+            gap: 20px;
+            margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--cor-linhas);
+          "
+        >
+          <div>
+            <p
+              style="margin: 0; font-size: 12px; color: var(--text-color-faded)"
+            >
+              Designado para
+            </p>
+            <p
+              id="mdRotinaSolicitante"
+              style="margin: 2px 0 0 0; font-weight: 600; color: white"
+            >
+              ---
+            </p>
+          </div>
+          <div>
+            <p
+              style="margin: 0; font-size: 12px; color: var(--text-color-faded)"
+            >
+              Data Vigente
+            </p>
+            <p
+              id="mdRotinaData"
+              style="margin: 2px 0 0 0; font-weight: 600; color: white"
+            >
+              ---
+            </p>
+          </div>
+        </div>
+        <div
+          style="
+            width: 100%;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--cor-linhas);
+            border-radius: 8px;
+          "
+        >
+          <table
+            style="width: 100%; border-collapse: collapse; font-size: 12.5px"
+          >
+            <thead>
+              <tr
+                style="
+                  background-color: #1e293b;
+                  color: white;
+                  text-align: left;
+                "
+              >
+                <th
+                  style="
+                    padding: 10px;
+                    border-bottom: 1px solid var(--cor-linhas);
+                    width: 30%;
+                  "
+                >
+                  Descrição
+                </th>
+                <th
+                  style="
+                    padding: 10px;
+                    border-bottom: 1px solid var(--cor-linhas);
+                    width: 15%;
+                  "
+                >
+                  Quando
+                </th>
+                <th
+                  style="
+                    padding: 10px;
+                    border-bottom: 1px solid var(--cor-linhas);
+                    width: 40%;
+                  "
+                >
+                  Comando / Instrução
+                </th>
+                <th
+                  style="
+                    padding: 10px;
+                    border-bottom: 1px solid var(--cor-linhas);
+                    width: 15%;
+                  "
+                >
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="mdRotinaTabelaBody"
+              style="color: var(--text-color-faded)"
+            ></tbody>
+          </table>
+        </div>
+        <div
+          style="
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 16px;
+          "
+        >
+          <button
+            type="button"
+            class="modal-btn"
+            onclick="gerarPdfChecklistRotina()"
+            style="
+              background-color: #2563eb;
+              color: #ffffff;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-weight: 600;
+            "
+          >
+            <i class="bi bi-file-earmark-pdf-fill"></i> Salvar PDF
+          </button>
+          <button
+            type="button"
+            class="modal-btn"
+            onclick="fecharModalDetalhesRotina()"
+            style="background-color: #334155; color: #f1f5f9"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+    <!--ÁREA DE IMPRESSÃO OCULTA PARA PDF-->
+    <div id="area-impressao-rotina" style="display: none">
+      <style>
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #area-impressao-rotina,
+          #area-impressao-rotina * {
+            visibility: visible;
+          }
+          #area-impressao-rotina {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            display: block !important;
+          }
+          @page {
+            size: A4 portrait;
+            margin: 10mm;
+          }
+        }
+        .print-top-bar {
+          background-color: #ffc20e;
+          height: 6px;
+          width: 100%;
+          margin-bottom: 8px;
+        }
+        .print-header-box {
+          border: 1px solid #333;
+          display: flex;
+          align-items: center;
+          padding: 6px 12px;
+          margin-bottom: 8px;
+        }
+        .print-logo-box {
+          padding-right: 16px;
+          border-right: 1px solid #ccc;
+          margin-right: 16px;
+          display: flex;
+          align-items: center;
+        }
+        .print-logo-img {
+          max-width: 130px;
+          height: auto;
+          display: block;
+        }
+        .print-title-box {
+          flex: 1;
+          text-align: left;
+        }
+        .print-title-box h2 {
+          margin: 0;
+          font-size: 13px;
+          text-transform: uppercase;
+          color: #000;
+          font-family: Arial, sans-serif;
+        }
+        .print-title-box p {
+          margin: 2px 0 0 0;
+          font-size: 11px;
+          font-weight: bold;
+          color: #000;
+          font-family: Arial, sans-serif;
+        }
+        .print-meta-box {
+          border: 1px solid #333;
+          display: flex;
+          justify-content: space-between;
+          padding: 8px 12px;
+          margin-bottom: 12px;
+          background-color: #f8fafc;
+          font-size: 10px;
+          font-family: Arial, sans-serif;
+          color: #000;
+        }
+        .print-tabela {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 10px;
+          font-family: Arial, sans-serif;
+        }
+        .print-tabela th {
+          background-color: #f1f5f9;
+          border: 1px solid #333;
+          padding: 6px;
+          text-align: center;
+          font-weight: bold;
+          color: #000;
+        }
+        .print-tabela td {
+          border: 1px solid #666;
+          padding: 6px;
+          color: #000;
+        }
+      </style>
 
-</body>
-
+      <div class="print-top-bar"></div>
+      <div class="print-header-box">
+        <div class="print-logo-box">
+          <!-- SUA LOGO EXATA EM BASE64 EMBARCADA DIRETO NO HTML -->
+          <img
+            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAagAAAB3CAMAAABhcyS8AAABTVBMVEX///8AnmH4YwIAm1uTLQAAmVd/w6IAl1Ov18L/o3r7/v3i8eqOyayLKAAspW6k0rr4XgD8ZQLOqqKOGwDARgH/pHttupQyqHP/n3MAlU+83837ez2UHgD4WACOpYf5biR8jkymOAH91Mb3UAD+7efUnIvjWAGsMgClWkfUUQP9jltetYr7gEX+lmeJAADx+fXO59tLr4D8hk/6dDCazrT6pofL5dhluJCGxaYAj0C228jZ7ONFrXz+mWz94NX5aBX+8+6cMgCrLwDLqaL8xK/khFvBZEL8uaDBUiL7rpCUMhDm1dG8hnn8zbzbVAHIm5CeRiqjUTmuZlOxHwCZnH+evqXMaw2BUCSJiER+uJG5fGyaeCZNlVViWBm/tZRpbTuFOQC1pXrmv7jjaxdGdTRdikNMhk12WCLOdy59oW6sRRvgzMecDgDOPADsTgC5tpyrAAAQzElEQVR4nO1d+UPjxhW2LAv5wFfBhwwuBVM2iwHbYLDX5tqGlmyS3SZp0jRHr7RN0ybt//9j55A0by5ZongRy3y/IY1GM++bee/NNyOcySwB2Sh0f7aMVxrcAfu1CJ7qv3r/odtnQHHTzWZrOtTX18yMSgeuu9naRluHX5cNUSnBQS17VdCh8RtDVEpwiybUYaFwsaHGB4aodGC3l60dFNqNLXVCUV/PGaJSgRPs+NqFY03iZ4hKCV4hx3eBHJ8uQTdEpQOXyPEdowl1pV1FGaJSAUTQVqNdONCueA1RqcApcnztQuFQr0wYotIA7Pj2kePT0mSISgcQESeNdmMjQuozRKUAONVDji9akjVEPTh2iOMrtCNoMkSlAbVsbQM5vhNDVLqxTyWJSMdniHp4vKZabDuaJ0PUQwNvQhEtNponQ9RD4zhaizVEpQS3C7RYQ1Q6sLtIizVEpQMbtQVarCEqFXi1UIs1RKUBu2ottm6IShm2lFpsfU/FlCHq4XDaVWmx9b1tQ1SqcKnWYuu5dUNUqpBVarH19bIhKlUodFVabH2vXP7AEJUi4E2oQ1mSqOdyH+50DVHpQU2pxSLHd/SRISpFOFRqscjxrX2cMUSlB697ai02l8tlDFHpAd6EUmixiIyjjwxRKcKxUoutvymv/TZjiEoPbjRaLMr48G1DVEqAHZ9Ki31GHJ8hKjXYqBEtVpQkfMdniEoLbpVaLHZ8n9AChqhUYFejxW7njnZpCUNUKnBSU2qxb9i31IaoNOBVV308LJf7NChiiEoBLnvKc7HY8V0HZQxRKcCVWot9Xj5iLBiilBhUWiGswZJf1qCOTzoeVl57jxUyRCkxcawAznTJ77qkWqwoSXCOjxBVl/HUiTp74YZwlv2yrFqLRY7vO1AKEbUt4+UTJ6oEsGzHd0G0WPlT3fLaZ7DYTvdlToWnTdRbBN59V2ixyPFt8uV+t7apwlHaiBoMO/lqvjNf9gCPjxJp0awzL8KL+WSY1YgWK0kSz8ubn89gwS9+rsEXfH0R7QXFOsFF7h1KVFkNVXC5qHpFMd+3PdfBcD2rOc9kRo5tO+ewzOqkGWDS4R8vsVsM0/FsrnwZwgA80FcWGq6e4/DlN6myMgxuVJxEsH+v1GKR48t9afElLQ1srphXVTWXoOWGpdzQdN6iFrqtsIIxKPxCMWFKTY9rpu01xzgpc8ag0NyzQ7irfAVV11YAW7g1Vk7QicOKeXKJ0tRGNXLGciv+4LAc1bt0sP6g/h8F2PElqog1d1Vqro+8CxocWH8ILyrBrDzwwGW3JNY/mHjSYKJWcuegWAXeFhrbjxiNXlOeMUOuRSJRqgbhciNS0XwlCb7qqrVYlPF9nqiiEFOdlyg6sLUV/+qq1jRhv0JnMYJlJaI6Lrhtc+MY5s1V2AxbWPlEjhrbmWcE8A0VWrTKaLI5j2RbOhvpcUy1WOlT3fLa14nrWoAmT4l/9dwO+8I5LfZHaOUOZ0ZXsNoKG9zIvTRXJlbIiD1hxQZcJXaTq2NoWy43GHB0AX97AhVjbuzxLSpV2PvdZr6T77M3261MQtyqtdj6S3zs6H7BeQnUVnq1SK/aXmuSB5Nr1GyOfJPZ/aAG7nkw0QhGzGbuiNpzFljGybNyvHODFPoNOmcFWoPBYF614BNc2QHfJa5FZ4wWZ0R9InD9XNCMgV3NuVh83jJZTYtRsfhe0atnxL5uH3dlHFqEjM0i9XROkJxMHb6CM1g75Ck0Qt6/CHzSmTBc+hkRjCg/gBVBy3kDCxENtqjD3uNMFOXdZMbbqBEtVvxUl5y3vGcQLwE65tHLU3zJz73OWd/I39RLBVYuka4Djwgz675acAtKsyuWgJHUUDbsA8Nz+Q4oeSZENNAi6D6Ym+uAVs5QCHNjwvmmptRiseOz4lYiQ4q4odFtRoXl0XiKR6vvf4ph54JxToay7yN9Glmgc8CCbQzcfwW8dUJKg0C0SkzFmmFzCyyBlXDUg/EFEwZawwgaH/Y26Ch7ogSauZJZmEWF+Lar1mLXy5vfx65EglpCJrPem7NiNJclXt6hnJ2F4y3wdvihwMok4Dh55h5B4JmD8evBcUKjHjCgZwnNgLSCRzDscLYxLuCsIa7YXp0qWtQCGd4Kqxvyd46yn5gj376qK7XYvfLmH+8+nzyPD/IUJDSgiQKIIgNt5jC/z3ocDNsRszLN7Ssgz3LYwhoEET47oKk4W4iSqMc1g88OMjBEsReA2MIuUlfsgGaH96pwQoHFVYn3ocWYOO0qtVjk+D6MW4UKCpp8L4GcgEgU9mRBV5i5A29XYR0lLg8FDbYKYnE9r3Y0IVHhrKH5ParRkl4VgPlfkG23WHn2VsIo4oZNweBeEbSHy//nmmAXjUuNFosyvt3YlcQECQ3YCTAyqBk8BN+OLNcNOld8ge7SDhHnhn1Rni1OQlEB9N7iY84YK0Ju6HyoI5xyzRBaCuI94xCkm6F783N/zlf6LYLpKRexQeWyz9Uiq5Yk9oLzlvcI30sU4diki44BhtiLMKbgm37OQUJcifpK3yxBLJxBO/KScIdoJYEvXiEFcUapJ2qFmT2cCzC0BDGqSKWpDlz0+uEITiieD7g+ltNNDdpqLRY5vk8XP5wQgZfgIsCZUIiZSBY3idMnljsTzcJFbsuN0Gb84YKnREv7gIrzMzhDSqC1JGeUiMrDgcOtuyZcjlGarsbAn9TnYnHG91Wc5/WQ19yhl+CWSsIGQ1SA9xdU2KYsew5GfAmkfIr1K0OLDXHWDGFQAK2B3YFypK9n0TyTBEQWNf0WgTWIIP/BeqqZShzR26lRxyfyhDK+P99JMwfquciU7yXIDGKyquCkgL1hQktBRiIdnCweB6RAf+Lot1j8lMNvBrMkTxSYDcxpgew8XOHZITEgavYFri1+zMGkD8WuOPtR1g9qLRY5vr/Yix+PhETUis16OFEtgwQTSXPNX+YLnQ2WOdwAVi62CWh+7zejL60EfLD1NNPVQSIYjASaf9vEbYKoOeL/Fscc1O1RplKqLsZfNVrsenktH+PxSAgEBKvRUR9hwqK4OPib+hAV2BQD9PVcMqMVcQzIr19shkAtEOPCGApzNZr9++lCZYIrE2WOKXRw3JgDQ0r2Gmp01VrsXnkJ5x+CWE/8IuiDMPGAZi1UwO8lWEI5KMRFhKhQfBOawWvwYKHDsgyw3PW3JybqLlFvCZVabsxBn+iqVAEZx0SLlf5tYj1Xfm/xwwmRF5TLsM/83iqIPYIEJewlAND6tTkWh4qmDl6DB84pTJ/h+2lgHepaVJHexFki8SrqRn0uFi91r2NVkABFzXQQ+WAmcoW8ndvW5UBuc55GeJQcORny1QvgH2GzgXEuRJaMrMDzLYLbzNwMB8sIN+IEEMO1RotFS93vFj+dEL6XCA5nA5mI99LMRB6/sqGyj82OdwtWg/vGQmZATrGQ6mh+b1fkSvjkE3i+MHZBVklcpa5Y1SISIiGvcDDCZQSZUOPKAvytpvx/sfVc7svWomdjoAWtNWTrDQKQIvF7q8xEwsaDODTBWhWOBBXHTHz3h0F4p6lOPkG8C/WjmeiwqCtkuRAQIjyRWOiKwYiiuvWibY5v1Odi8VI3/g5JBLhtjopwpSMsOmQTCXGG6mZgtcMWNZ7Yf0EPIukmGSN0W9djXo6pIFzyCWS7UD8CPaM7KNQVgyAD1sh4oIDcDlYOQp1DK59Eb3N8S/9HgSRJoKXu3527724wvAApqe8lVITYnNjFMjs+Hyp5YocnQhoPZQNeD2J7ktLIkBVvgpY80cA4oPvQvgIPQhuYUQNuEHAJE2t3uLVZisRWTf0TNrm1z6IfjAtp/8XtiFdIczkXx0zkZbjrljB8gR3oNJsphDhmGWK6JhVjQcOA7AOTT8HkGW7r2CFEU5mF89vg/fgpqL+zPQ5whsKOddT6VVetxT4rby5+OCEG0kiG+ibcCYKBFtYwER0fp/4QT8RlzyDgEHZcfGHqivegRg5aB0IUHRrFJjxKRN5WkUcTOAhB5hnU2sMOgoqkg6MqXPbUWuyb8tGPcZ5PgGI+WAx25uF5fbhXyibaHPp1JhUMW9QG0BvOpfHKpe+B7xuck5PMzcG841dinw/nQdUD8ASb7/MWCFGl+byzAk4aupNMcT4f+1fs8Xwe2Buk73YL93MVXPBTW6D5x/wo8UqpxWLHd8/nLZtA7XFcck4cHyPnTje2Jv15xnZslz9Y6dpOBScA7LJLBcSOh2oAJW2r369yBybQoEBUFc+a5IwqclaeGxrbdskmJMrZuUpQ6xwPTWnUCrgCwmoVCDb4QP3MY11CleEZuuI63AFNG/09zcCjUv2z0nzGjl66YAJHfM1RbWi02O3cZlX/WDLQhYnFAXuSuSxR2B7n9Fj3VrmYbPlurillpbaH5sMqrBgZzvFN7jWFg+0kHikEKRRxtAti+hZyopN/PYliisJo+g8AU2hUMMYdG2p/evXc/odGi31T3vz+/xXNmXqOU7QSb6GpxkIjtYWwrxNKyuRTc2Fft6IkG7tW/mA7caEjRdF85McBbpO6TL6lFamX/ksy+OioSjdzhE9H9F9zWFmlFosc3+Y/Y2w06bpiCftRZNxyn6+QZPZcrgCl3SNVaz2cXsALbjOTEXwcfTNNHWeOQDeyLvlWoeJyQwjb0FO8bpBRXMUjF3/P1PHj3vAFVxcee4qPdGhumOlU+K9tbMdriXtl+q85ftBosdvlD+N8pvGvX2jwlfw1x5i7hL9XKdqyiGGVMk3Vm1BAGvJX8FyoWnIFwbmfMYpj1DLYWMgo1LqzDsSZzjqZkuLidJznvhAscXV1yOau4rFggTWftjz6/ZqLguOkGivXo9jRaLHPYx40P91qFBTY7937oaW7oJRf6bcqVuV8stpJyzehpSEZH6WEH9motVj8hc0vYz1/uoVoltA47F3eoQ8GWuxTLVakCTu+eBUgogobWxKuuoao+8SN5lzs89jnLTFRqt+mNETdJ67VWmx8x2eIejs4VmuxyPF9ErcKLVGpSCbeEdxotNj4js/MqLcB5PiyKJGQMr5EB80PTzRE7Syx5U8MGzWUmSsyvpfxHV8mk9URdbu8hj8xnHbxP9GRHd9e+Si+29rtbRSkr30xagdLbPqTwuseWUFJ/y+2vl7+d/xaXnWPCwXlD76mQ5p4/Njp1Q4aigCVrT9L8PH7dbd2qPll3trxElv/dHCD5pOSJzyjPlv8vI+t2lVDnpR+lDpdYvufCi565Ac3VHMBx6iYRy4vr2p4h0RJE2bqcLmdeOexe9rtnrTl35YMmNouH30dI8C8Pu6R9bL+t+Nr3VOzmkqMXYTLnde3F9le92q/USg0dBbG39kcffLx+z9+dK2s6XLn5tXFVq/brZ0ohXeOqu7B6e3rHZNYxEePoNvtbh0c4i2kiy2thet767ny2traT0rBbxfXkt06OdhvI7bVsxJyhcj6z/1/AfzuorZRaGPQDaO29E99earqe8+fbT/TEBVUUmgc6tkGeLmED3feXSCiAvO2908W27f+XE8UqeZi/+AqDk0oO8kZouIDE7W/gXCCcrU49o0i6nDrKhurFkNUYmCiov1dAqIWRiZD1J1BiIpvXkPUQ8EQ9UhgiHokMEQ9EhiiHgkMUY8EhqhHAkPUI4Eh6pEgKVHZCKLaSYjKGqISoXZSXisnwUsdUd0PklVUzhmiEqCu/i1CPbRE/becsCZDVBKsJzWvlqifEvNkiIqL/wH7fA36NR+4JwAAAABJRU5ErkJggg=="
+            class="print-logo-img"
+            alt="Logo Atacadão"
+          />
+        </div>
+        <div class="print-title-box">
+          <h2>
+            Check - List de Abertura / Intermediário (Filiais) - Versão 3.7
+          </h2>
+          <p id="print-rotina-nome">Rotina: Abertura</p>
+        </div>
+      </div>
+      <div class="print-meta-box">
+        <div><strong>DATA:</strong> <span id="print-meta-data"></span></div>
+        <div><strong>FILIAL:</strong> 082:Juazeiro do Norte São José</div>
+        <div>
+          <strong>OPERADOR (ES):</strong>
+          <span id="print-meta-operadores"></span>
+        </div>
+      </div>
+      <table class="print-tabela">
+        <thead>
+          <tr>
+            <th style="width: 30%">TAREFA</th>
+            <th style="width: 15%">QUANDO</th>
+            <th style="width: 40%">COMANDO / INSTRUÇÃO</th>
+            <th style="width: 7.5%">OK</th>
+            <th style="width: 7.5%">NÃO</th>
+          </tr>
+        </thead>
+        <tbody id="print-tabela-body">
+          <!-- Preenchido via JavaScript antes da impressão -->
+        </tbody>
+      </table>
+    </div>
+  </body>
 </html>
