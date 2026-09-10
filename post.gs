@@ -1,3 +1,4 @@
+
 /**  CONFIGURAÇÕES INICIAIS DA PÁGINA */
 function doGet(e) {
   /**O template limpa qualquer renderização estática anterior */
@@ -71,6 +72,21 @@ function roteadorChamado(data) {
     case "consultarHistoricoRotinas":
       return consultarHistoricoRotinas(data);
 
+    case "obterEquipamentos":
+      return obterEquipamentos(data);
+
+    case "salvarEquipamento":
+      return salvarEquipamento(data);
+
+    case "atualizarEquipamento":
+      return atualizarEquipamento(data);
+
+    case "deletarEquipamento":
+      return deletarEquipamento(data);
+
+    case "processarPedidoNfe":
+      return processarPedidoNfe(data);
+
     default:
       return { status: "erro", mensagem: "Função não reconhecida." };
   }
@@ -79,7 +95,7 @@ function roteadorChamado(data) {
 /** LÓGICA DE AUTENTICAÇÃO E BANCO DE DADOS */ 
 
 function autenticarUsuario(matricula, senha) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const sheet = ss.getSheetByName("users"); 
   
   if (!sheet) {
@@ -123,7 +139,7 @@ function carregarPaginaSistema() {
 /** AREA DE CHAMADOS / CADASTRA /ALTERA / REQUISIÇÃO / ATUALIZAÇÃO */
 
 function entradaDeInformacoes(data) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const main = ss.getSheetByName("main");
 
   if (main.getLastRow() === 0) {
@@ -200,7 +216,7 @@ function entradaDeInformacoes(data) {
  
 /** Faz a REQUISIÇÃO dos dados no banco para exibir na tabela */
 function lerChamados(data) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const main = ss.getSheetByName("main");
 
   /**converte dada e hora pra texto */
@@ -231,7 +247,7 @@ function lerChamados(data) {
 /** AREA DE CASTRO/ALTERAÇÃO/EXCLUSÃO e EXIBIÇÃO DE USUARIOS */
 
 function cadastraUsuario(data) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const main = ss.getSheetByName("users");
 
   /** Garante cabeçalho com as novas colunas */
@@ -303,7 +319,7 @@ function cadastraUsuario(data) {
 
 /** REMOVE USUÁRIO */
 function deletarUsuario(data) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const main = ss.getSheetByName("users");
   const ultimaLinha = main.getLastRow();
 
@@ -322,7 +338,7 @@ function deletarUsuario(data) {
 
 /** Obtém os nomes e cargos da planilha de usuários e os retorna como um array de objetos para preencher o select solicitante.*/
 function listarNomeCargo() {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const main = ss.getSheetByName("users");
 
   const dados = main.getDataRange().getValues();
@@ -339,7 +355,7 @@ function listarNomeCargo() {
 
 /** EXIBE as infomações de usuarios na aba castro de usuarios */
 function lerUsuarios(data) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const main = ss.getSheetByName("users");
   
   const lines = main.getDataRange().getValues();
@@ -363,7 +379,7 @@ function lerUsuarios(data) {
 /** PÁGINAS DE METRICAS */
 function buscarChamadosPorPeriodo(dados) {
   try {
-    const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+    const ss = SpreadsheetApp.openById("");
     const planilha = ss.getSheetByName('main');
     if (!planilha) return { status: 'erro', mensagem: 'Aba main não localizada.' };
 
@@ -467,7 +483,7 @@ function buscarChamadosPorPeriodo(dados) {
   /** FUNÇÃO QUE BUSCA CHAMADO POR ID */
 function buscarUnicoChamado(idBusca) {
   try {
-    var planilha = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+    var planilha = SpreadsheetApp.openById("");
     var aba = planilha.getSheetByName("main"); 
     
     if (!aba) {
@@ -510,7 +526,7 @@ function buscarUnicoChamado(idBusca) {
 
 /** CADASTRA OU EDITA TAREFAS DE ROTINA */
 function cadastraTarefa(data) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   let sheet = ss.getSheetByName("tasks");
   const mainSheet = ss.getSheetByName("main");
   
@@ -606,7 +622,7 @@ function cadastraTarefa(data) {
 }
 /** RETORNA TODAS AS TAREFAS CADASTRADAS */
 function lerTarefas() {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const sheet = ss.getSheetByName("tasks");
   if (!sheet) return [];
   
@@ -642,7 +658,7 @@ function lerTarefas() {
 
 /** BUSCA UMA TAREFA ISOLADA PARA EDIÇÃO  */
 function buscarUnicaTarefa(data) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const sheet = ss.getSheetByName("tasks");
   const dados = sheet.getDataRange().getValues();
   
@@ -692,7 +708,7 @@ function buscarUnicaTarefa(data) {
 /**FUNÇÃO PARA DELETAR TAREFAS PELO ID */
 
 function deletarTarefa(data) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const sheet = ss.getSheetByName("tasks");
   const dados = sheet.getDataRange().getValues();
   for (let i = 1; i < dados.length; i++) {
@@ -707,8 +723,8 @@ function deletarTarefa(data) {
 
 /** FUNÇÃO DE PROCESSAMENTO AUTOMÁTICO */
 
-function verificarEGerarChamadosAutomaticos() {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+/*function verificarEGerarChamadosAutomaticos() {
+  const ss = SpreadsheetApp.openById("");
   const taskSheet = ss.getSheetByName("tasks");
   const mainSheet = ss.getSheetByName("main");
   const userSheet = ss.getSheetByName("users");
@@ -810,12 +826,154 @@ function verificarEGerarChamadosAutomaticos() {
       }
     }
   });
+}*/
+
+/** FUNÇÃO DE PROCESSAMENTO AUTOMÁTICO (CORRIGIDA) */
+function verificarEGerarChamadosAutomaticos() {
+  const ss = SpreadsheetApp.openById("");
+  const taskSheet = ss.getSheetByName("tasks");
+  const mainSheet = ss.getSheetByName("main");
+  const userSheet = ss.getSheetByName("users");
+  
+  if (!taskSheet || !mainSheet) return;
+  
+  const tarefas = taskSheet.getDataRange().getValues();
+  if (tarefas.length <= 1) return; // Se só tiver cabeçalho, encerra
+  tarefas.shift(); // Remove cabeçalho
+  
+  // Utiliza o fuso horário exato da planilha
+  const fusoHorario = ss.getSpreadsheetTimeZone();
+  const agora = new Date();
+  
+  const horaAtualStr = Utilities.formatDate(agora, fusoHorario, "HH:mm");
+  const dataAtualStr = Utilities.formatDate(agora, fusoHorario, "dd/MM/yyyy");
+  
+  // Converte o horário atual em minutos totais do dia
+  const [hAtual, mAtual] = horaAtualStr.split(":").map(Number);
+  const minutosAtuaisTotais = hAtual * 60 + mAtual;
+
+  // Mapeia funções dos usuários
+  const dadosUsuarios = userSheet ? userSheet.getDataRange().getValues() : [];
+  const mapeamentoFuncoes = {};
+  for (let i = 1; i < dadosUsuarios.length; i++) {
+    let nomeCompleto = (String(dadosUsuarios[i][1]).trim() + " " + String(dadosUsuarios[i][2]).trim()).trim();
+    mapeamentoFuncoes[nomeCompleto] = dadosUsuarios[i][3] ? String(dadosUsuarios[i][3]).trim() : "Geral";
+  }
+
+  // Lê todos os chamados existentes na aba main para validação de duplicidade
+  const chamadosMain = mainSheet.getDataRange().getValues();
+
+  tarefas.forEach(tarefa => {
+    let textoCel = String(tarefa[1] || "");
+    const tipo = String(tarefa[2] || "").trim();
+    const dataAgendada = tarefa[3];
+    let horaAgendada = tarefa[4];
+    const responsavel = tarefa[5] ? String(tarefa[5]).trim() : "";
+    
+    if (!horaAgendada) return;
+
+    let rotinaNome = "Rotina Agendada";
+    let comandoDiretriz = "Executar padrão";
+    let descricaoReal = textoCel;
+
+    // Quebra as 3 strings unidas da automação
+    if (textoCel.includes(" // ")) {
+      let partes = textoCel.split(" // ");
+      if (partes.length >= 3) {
+        rotinaNome = partes[0];
+        comandoDiretriz = partes[1];
+        descricaoReal = partes[2];
+      } else {
+        rotinaNome = partes[0];
+        descricaoReal = partes[1];
+      }
+    }
+
+    // Formata o horário da tarefa para HH:mm
+    if (horaAgendada instanceof Date) { 
+      horaAgendada = Utilities.formatDate(horaAgendada, fusoHorario, "HH:mm"); 
+    } else { 
+      horaAgendada = String(horaAgendada).trim(); 
+    }
+    
+    if (!horaAgendada.includes(":")) return;
+    
+    const [hTask, mTask] = horaAgendada.split(":").map(Number);
+    const minutosTaskTotais = hTask * 60 + mTask;
+    
+    // Calcula a diferença real em minutos considerando viradas de hora
+    const diferencaMinutos = Math.abs(minutosAtuaisTotais - minutosTaskTotais);
+
+    // Aceita se estiver dentro da janela de até 15 minutos do horário agendado
+    if (diferencaMinutos <= 15) {
+      let precisaCriar = false;
+      
+      let dataAgendadaStr = "";
+      if (dataAgendada instanceof Date) { 
+        dataAgendadaStr = Utilities.formatDate(dataAgendada, fusoHorario, "dd/MM/yyyy"); 
+      } else { 
+        dataAgendadaStr = String(dataAgendada || "").trim(); 
+      }
+      
+      if (tipo.toLowerCase() === "diaria" || tipo.toLowerCase() === "diária") { 
+        precisaCriar = true; 
+      } else if (tipo.toLowerCase() === "mensal" && dataAgendadaStr === dataAtualStr) { 
+        precisaCriar = true; 
+      }
+      
+      if (precisaCriar) {
+        // Verifica se o chamado já foi criado hoje na aba main
+        const jaExiste = chamadosMain.some(c => {
+          let tipoChamado = String(c[1] || "").trim();
+          let descChamado = String(c[5] || "").trim();
+          
+          let dataChamadoStr = "";
+          if (c[8] instanceof Date) {
+            dataChamadoStr = Utilities.formatDate(c[8], fusoHorario, "dd/MM/yyyy");
+          } else {
+            dataChamadoStr = String(c[8] || "").trim();
+          }
+
+          return tipoChamado === "Rotina do setor" && descChamado === descricaoReal && dataChamadoStr === dataAtualStr;
+        });
+        
+        if (!jaExiste) {
+          const ultimaLinha = mainSheet.getLastRow();
+          let maiorId = 0;
+          if (ultimaLinha > 1) {
+            const ids = mainSheet.getRange(2, 1, ultimaLinha - 1).getValues().flat();
+            maiorId = Math.max(...ids.map(Number).filter(n => !isNaN(n)));
+          }
+          
+          const funcaoRealDoResponsavel = mapeamentoFuncoes[responsavel] || "Geral";
+          
+          let partesResp = responsavel.split(" ");
+          let responsavelCurto = partesResp[0] + (partesResp[1] ? " " + partesResp[1] : "");
+
+          // Insere o novo chamado formatado
+          mainSheet.appendRow([
+            maiorId + 1,
+            "Rotina do setor",
+            responsavelCurto,
+            funcaoRealDoResponsavel,
+            "Pendente", 
+            descricaoReal,
+            rotinaNome, 
+            horaAgendada + ":00",
+            dataAtualStr,
+            tipo, 
+            comandoDiretriz 
+          ]);
+        }
+      }
+    }
+  });
 }
 
 /** FUNÇÃO DE CONSULTA DE ROTINAS */
 
 function consultarStatusRotina(data) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const main = ss.getSheetByName("main");
   if (!main) return { encontrado: false };
 
@@ -874,7 +1032,7 @@ function consultarStatusRotina(data) {
 /**  FUNÇÃO QUE CONSULTA HISTORICO DE ROTINAS*/
 
 function consultarHistoricoRotinas(data) {
-  const ss = SpreadsheetApp.openById("13UyhcdumIUdPIxDUzzDQFO_H0TgyCNJo-lHvubW5NII");
+  const ss = SpreadsheetApp.openById("");
   const main = ss.getSheetByName("main");
   if (!main) return { historico: [] };
 
@@ -965,4 +1123,206 @@ function consultarHistoricoRotinas(data) {
   });
 
   return { historico: historico };
+}
+
+const equipamentos = "equipamentos";
+
+function obterAbaEquipamentos() {
+  const ss = SpreadsheetApp.openById("");
+  let aba = ss.getSheetByName("equipamentos");
+  if (!aba) {
+    aba = ss.insertSheet(equipamentos);
+    aba.appendRow(["ID", "Numero", "Nome", "Modelo", "Tipo", "Local", "Status", "DataAdd", "Observacao"]);
+  }
+  return aba;
+}
+
+function obterEquipamentos(data) {
+  const aba = obterAbaEquipamentos();
+  const dados = aba.getDataRange().getValues();
+  if (dados.length <= 1) return [];
+
+  const resultado = [];
+  for (let i = 1; i < dados.length; i++) {
+    const row = dados[i];
+    resultado.push({
+      id: row[0],
+      numero: String(row[1]),
+      nome: String(row[2]),
+      modelo: String(row[3]),
+      tipo: String(row[4]),
+      local: String(row[5]),
+      status: String(row[6]),
+      dataAdd: row[7] ? Utilities.formatDate(new Date(row[7]), "GMT-3", "dd/MM/yyyy") : "",
+      obs: String(row[8])
+    });
+  }
+  return resultado;
+}
+
+function salvarEquipamento(data) {
+  const aba = obterAbaEquipamentos();
+  const ultLinha = aba.getLastRow();
+  
+  let novoId = 1;
+  if (ultLinha > 1) {
+    const ids = aba.getRange(2, 1, ultLinha - 1, 1).getValues();
+    const maxId = Math.max(...ids.map(r => Number(r[0]) || 0));
+    novoId = maxId + 1;
+  }
+
+  const dataHoje = Utilities.formatDate(new Date(), "GMT-3", "dd/MM/yyyy");
+
+  aba.appendRow([
+    novoId,
+    data.numero,
+    data.nome,
+    data.modelo,
+    data.tipo,
+    data.local,
+    data.status,
+    dataHoje,
+    data.obs || ""
+  ]);
+
+  return { status: "sucesso", mensagem: "Equipamento cadastrado com sucesso!" };
+}
+
+function atualizarEquipamento(data) {
+  const aba = obterAbaEquipamentos();
+  const valores = aba.getDataRange().getValues();
+
+  for (let i = 1; i < valores.length; i++) {
+    if (Number(valores[i][0]) === Number(data.id)) {
+      const linha = i + 1;
+      aba.getRange(linha, 2).setValue(data.numero);
+      aba.getRange(linha, 3).setValue(data.nome);
+      aba.getRange(linha, 4).setValue(data.modelo);
+      aba.getRange(linha, 5).setValue(data.tipo);
+      aba.getRange(linha, 6).setValue(data.local);
+      aba.getRange(linha, 7).setValue(data.status);
+      aba.getRange(linha, 9).setValue(data.obs || "");
+      break;
+    }
+  }
+  return { status: "sucesso", mensagem: "Equipamento atualizado com sucesso!" };
+}
+
+function deletarEquipamento(data) {
+  const aba = obterAbaEquipamentos();
+  const valores = aba.getDataRange().getValues();
+
+  for (let i = 1; i < valores.length; i++) {
+    if (Number(valores[i][0]) === Number(data.id)) {
+      aba.deleteRow(i + 1);
+      break;
+    }
+  }
+  return { status: "sucesso", mensagem: "Equipamento deletado com sucesso!" };
+}
+
+
+const intenspedidos = "pedidosRefeitorio";
+const emailcliente = "pedrosimaocontato@gmail.com";
+
+function obterAbaNfe() {
+  const ss = SpreadsheetApp.openById("");
+  let aba = ss.getSheetByName("pedidosRefeitorio");
+  if (!aba) {
+    aba = ss.insertSheet("pedidosRefeitorio");
+    aba.appendRow(["ID Pedido", "Data", "Hora", "Solicitante", "Codigo de Barras", "Quantidade"]);
+  }
+  return aba;
+}
+
+function processarPedidoNfe(data) {
+  try {
+    if (!data.itens || data.itens.length === 0) {
+      return { status: "erro", mensagem: "Lista de itens vazia." };
+    }
+
+    const aba = obterAbaNfe();
+    const ultLinha = aba.getLastRow();
+    
+    // 1. GERADOR DE ID 100% NUMÉRICO SEQUENCIAL
+    let idPedidoNum = 1;
+    if (ultLinha > 1) {
+      const idsExistentes = aba.getRange(2, 1, ultLinha - 1, 1).getValues();
+      const maxId = Math.max(...idsExistentes.map(r => Number(r[0]) || 0));
+      idPedidoNum = maxId + 1;
+    }
+
+    const dataHoje = Utilities.formatDate(new Date(), "GMT-3", "dd/MM/yyyy");
+    const horaHoje = Utilities.formatDate(new Date(), "GMT-3", "HH:mm:ss");
+    
+    const solicitante = (data.solicitante && data.solicitante !== "---" && data.solicitante !== "") 
+                        ? data.solicitante 
+                        : "Usuário Não Identificado";
+
+    // 2. MONTA AS LINHAS PARA GRAVAÇÃO NA PLANILHA
+    let linhasParaInserir = [];
+    let tabelaHtmlItens = "";
+
+    data.itens.forEach(function(item, index) {
+      linhasParaInserir.push([
+        idPedidoNum,
+        dataHoje,
+        horaHoje,
+        solicitante,
+        "'" + item.codigo,
+        item.quantidade
+      ]);
+
+      tabelaHtmlItens += `
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${index + 1}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">${item.codigo}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;">${item.quantidade}</td>
+        </tr>`;
+    });
+
+    // Inserção em lote na planilha
+    aba.getRange(ultLinha + 1, 1, linhasParaInserir.length, 6).setValues(linhasParaInserir);
+
+    // 3. ENVIO DO E-MAIL VIA MAILAPP (Evita erro de permissão do Web App)
+    const assuntoEmail = `[Portal S.I] Solicitação de NFe Pedido #${idPedidoNum} - Solicitante: ${solicitante}`;
+    
+    const corpoHtml = `
+      <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+        <h2 style="color: #8b5cf6; margin-top: 0;">Nova Solicitação de NFe (#${idPedidoNum})</h2>
+        <p><strong>Solicitante:</strong> ${solicitante}</p>
+        <p><strong>Data/Hora:</strong> ${dataHoje} às ${horaHoje}</p>
+        <p><strong>Total de Itens:</strong> ${data.itens.length}</p>
+        
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+        
+        <h3>Relação de Produtos para Emissão:</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background-color: #f8fafc; text-align: left;">
+              <th style="padding: 8px; border: 1px solid #ddd; width: 10%;">#</th>
+              <th style="padding: 8px; border: 1px solid #ddd; width: 65%;">Código de Barras</th>
+              <th style="padding: 8px; border: 1px solid #ddd; width: 25%; text-align: center;">Qtd</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tabelaHtmlItens}
+          </tbody>
+        </table>
+        
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 20px;">E-mail gerado automaticamente pelo Portal de Chamados (simao.dev).</p>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: emailcliente,
+      subject: assuntoEmail,
+      htmlBody: corpoHtml
+    });
+
+    return { status: "sucesso", mensagem: "Pedido #" + idPedidoNum + " processado com sucesso!" };
+
+  } catch (erro) {
+    return { status: "erro", mensagem: "Erro no servidor: " + erro.toString() };
+  }
 }

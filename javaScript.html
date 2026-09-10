@@ -7,68 +7,75 @@
   /**FUNÇÃO DE AUTENTICAÇÃO E LOGIN */
 
   function entrar() {
-    var mat = document.getElementById("matricula").value;
-    var sen = document.getElementById("senha").value;
-    var msg = document.getElementById("mensagem");
+  var mat = document.getElementById("matricula").value;
+  var sen = document.getElementById("senha").value;
+  var msg = document.getElementById("mensagem");
 
-    if (!mat || !sen) {
-      if (msg) msg.innerText = "Preencha todos os campos.";
-      return;
-    }
-
-    if (msg) msg.innerText = "Autenticando...";
-
-    google.script.run
-      .withSuccessHandler(function(respostaPerfil) {
-
-        /** Trata o retorno como objeto estruturado conforme o post.gs devolve */
-        if (respostaPerfil && respostaPerfil.nivel) {
-          if (msg) msg.innerText = "Login aprovado! Carregando sistema...";
-          
-          nivelUsuarioLogado = String(respostaPerfil.nivel).toLowerCase().trim();
-          nomeUsuarioLogado = respostaPerfil.nomeCompleto;
-          funcaoUsuarioLogado = respostaPerfil.funcao;
-          
-          google.script.run
-            .withSuccessHandler(function(htmlSistema) {
-              document.body.innerHTML = htmlSistema;
-              
-              /** Executa a inicialização de forma segura isolando os blocos por try/catch */ 
-              setTimeout(function() {
-                try { configurarPermissoes(nivelUsuarioLogado); } catch(e) { console.error("Erro Permissoes:", e); }
-                try { configurarNavegacao(); } catch(e) { console.error("Erro Navegacao:", e); }
-                
-                /** Inicializações de tabelas puros com base nas permissões de escopo */ 
-                try { lerDadosDaTabela(); } catch(e) { console.error("Erro Tabela Geral:", e); }
-                try { lerDadosDosUsuarios(); } catch(e) { console.error("Erro Tabela Users:", e); }
-                try { preencherSelectSolicitante(); } catch(e) { console.error("Erro Select Solicitantes:", e); }
-                try { inicializaPainel(); } catch(e) { console.error("Erro Painel Metricas:", e); }
-                try { atualizarBadgeNotificacao(); } catch(e) { console.error("Erro Badge:", e); }
-                try { lerDadosDasTarefas(); } catch(e) { console.error("Erro Módulo Tarefas:", e); }
-                
-                /** INCLUSÃO DA ABA DE CHAMADOS (PORTAL DO CLIENTE) */
-                try { lerChamadosDoClienteLogado(); } catch(e) { console.error("Erro Histórico Cliente:", e); }
-                
-                setInterval(function() {
-                  try { atualizarBadgeNotificacao(); } catch(e) {}
-                }, 10000);
-              }, 150);
-            })
-            .carregarPaginaSistema();
-            
-        } else {
-          if (msg) msg.innerText = "Usuário ou senha inválidos.";
-        }
-      })
-      .withFailureHandler(function(erro) {
-        if (msg) msg.innerText = "Erro: " + erro.message;
-      })
-      .roteadorChamado({
-        qualFuncao: "autenticarUsuario", 
-        matricula: mat, 
-        senha: sen
-      });
+  if (!mat || !sen) {
+    if (msg) msg.innerText = "Preencha todos os campos.";
+    return;
   }
+
+  if (msg) msg.innerText = "Autenticando...";
+
+  google.script.run
+    .withSuccessHandler(function(respostaPerfil) {
+
+      /** Trata o retorno como objeto estruturado conforme o post.gs devolve */
+      if (respostaPerfil && respostaPerfil.nivel) {
+        if (msg) msg.innerText = "Login aprovado! Carregando sistema...";
+        
+        nivelUsuarioLogado = String(respostaPerfil.nivel).toLowerCase().trim();
+        nomeUsuarioLogado = respostaPerfil.nomeCompleto;
+        funcaoUsuarioLogado = respostaPerfil.funcao;
+        
+        google.script.run
+          .withSuccessHandler(function(htmlSistema) {
+            document.body.innerHTML = htmlSistema;
+            
+            /** Executa a inicialização de forma segura isolando os blocos por try/catch */ 
+            setTimeout(function() {
+              // Preenche o campo oculto do usuário assim que a tela é injetada no DOM
+              try {
+                if (document.getElementById("ncUsuarioLogado")) {
+                  document.getElementById("ncUsuarioLogado").value = nomeUsuarioLogado;
+                }
+              } catch(e) { console.error("Erro ao preencher usuario logado:", e); }
+
+              try { configurarPermissoes(nivelUsuarioLogado); } catch(e) { console.error("Erro Permissoes:", e); }
+              try { configurarNavegacao(); } catch(e) { console.error("Erro Navegacao:", e); }
+              
+              /** Inicializações de tabelas puros com base nas permissões de escopo */ 
+              try { lerDadosDaTabela(); } catch(e) { console.error("Erro Tabela Geral:", e); }
+              try { lerDadosDosUsuarios(); } catch(e) { console.error("Erro Tabela Users:", e); }
+              try { preencherSelectSolicitante(); } catch(e) { console.error("Erro Select Solicitantes:", e); }
+              try { inicializaPainel(); } catch(e) { console.error("Erro Painel Metricas:", e); }
+              try { atualizarBadgeNotificacao(); } catch(e) { console.error("Erro Badge:", e); }
+              try { lerDadosDasTarefas(); } catch(e) { console.error("Erro Módulo Tarefas:", e); }
+              
+              /** INCLUSÃO DA ABA DE CHAMADOS (PORTAL DO CLIENTE) */
+              try { lerChamadosDoClienteLogado(); } catch(e) { console.error("Erro Histórico Cliente:", e); }
+              
+              setInterval(function() {
+                try { atualizarBadgeNotificacao(); } catch(e) {}
+              }, 10000);
+            }, 150);
+          })
+          .carregarPaginaSistema();
+          
+      } else {
+        if (msg) msg.innerText = "Usuário ou senha inválidos.";
+      }
+    })
+    .withFailureHandler(function(erro) {
+      if (msg) msg.innerText = "Erro: " + erro.message;
+    })
+    .roteadorChamado({
+      qualFuncao: "autenticarUsuario", 
+      matricula: mat, 
+      senha: sen
+    });
+}
 
   /** NAVEGAÇÃO ENTRE MENUS - DIRECIONAMENTO EXCLUSIVO BASEADO NA PERMISSÃO */ 
   function configurarNavegacao() {
@@ -115,8 +122,7 @@
   }
 
   /** FUNÇÃO DE HISTÓRICO E REQUISIÇÃO (PORTAL DO CLIENTE)*/
-  
-  /**FUNÇÃO PARA ABRIR O MODAL DE NOVO CHAMADO*/
+
 
   function abrirModalNovoChamado() {
     try {
@@ -260,37 +266,44 @@
   }
 
   /** RESTRICAO TOTAL DE ACESSO DO PORTAL DO CLIENTE */ 
-  function configurarPermissoes(nivel) {
-    const botoesMenu = document.querySelectorAll(".menu-navegação");
-    const areasConteudo = document.querySelectorAll(".form-area");
-    const nivelAcesso = String(nivel).toLowerCase().trim();
+function configurarPermissoes(nivel) {
+  const botoesMenu = document.querySelectorAll(".menu-navegação");
+  const areasConteudo = document.querySelectorAll(".form-area");
+  const nivelAcesso = String(nivel).toLowerCase().trim();
 
-    botoesMenu.forEach(btn => btn.style.display = '');
+  // Libera a exibição inicial de todos os botões do menu
+  botoesMenu.forEach(btn => btn.style.display = '');
 
-    if (nivelAcesso === 'cliente') {
-      /** Oculta completamente botões restritos do painel lateral */ 
-      botoesMenu.forEach(btn => {
-        if (btn.dataset.alvo !== 'chamados') {
-          btn.style.setProperty('display', 'none', 'important');
-        }
-      });
+  if (nivelAcesso === 'cliente') {
+    /** 
+     * Oculta botões restritos do painel lateral.
+     * Permite apenas 'chamados' e 'coleta-nfe-aba'.
+     */ 
+    botoesMenu.forEach(btn => {
+      const alvo = btn.dataset.alvo;
+      if (alvo !== 'chamados' && alvo !== 'coleta-nfe-aba') {
+        btn.style.setProperty('display', 'none', 'important');
+      }
+    });
 
-      /** Remove o foco visual de qualquer outra aba administrativa ativa em background */ 
-      areasConteudo.forEach(aba => {
-        if (aba.id !== 'chamados') {
-          aba.classList.remove("conteudo-ativo");
-        }
-      });
-    }
-  
-    if (document.getElementById('displayNivel')) {
-      document.getElementById('displayNivel').innerText = nivelAcesso.toUpperCase();
-    }
+    /** 
+     * Remove o foco visual de abas administrativas restritas ativas em background.
+     * Preserva as abas liberadas para o cliente ('chamados' e 'coleta-nfe-aba').
+     */ 
+    areasConteudo.forEach(aba => {
+      if (aba.id !== 'chamados' && aba.id !== 'coleta-nfe-aba') {
+        aba.classList.remove("conteudo-ativo");
+      }
+    });
   }
 
+  if (document.getElementById('displayNivel')) {
+    document.getElementById('displayNivel').innerText = nivelAcesso.toUpperCase();
+  }
+}
   /**FUNÇÃO RESPOSAVEL POR FAZER O LOGOUT DO USUARIO */
   function fazerLogout() {
-    var url = 'https://script.google.com/macros/s/AKfycbzpvi0bv16fmhB2dyL9lDJMNIpVhkZ7nhBZRxHENhKhDD2KLM8bZiYiqMTnyINIc4AM/exec';
+    var url = 'https://script.google.com/macros/s/AKfycbyEP_J2lPoXHFiCwMefE3vYA213dPv7kmkmh33SErR8Ahss4346sb3ZDARNOaxFcX_4Qw/exec';
     window.top.location.href = url;
   }
 
@@ -1338,5 +1351,410 @@ function gerarPdfChecklistRotina() {
 
   // Dispara a impressão nativa utilizando o layout formatado com a logo Base64 do HTML
   window.print();
+};
+  // Variável global para armazenar a lista localmente para busca rápida
+  let listaEquipamentosGlobal = [];
+
+// 1. CARREGAR EQUIPAMENTOS DO BACKEND VIA ROTEADOR
+function carregarEquipamentos() {
+  const tbody = document.getElementById("tabela-equipamentos-body");
+  tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: var(--text-color-faded);">Carregando equipamentos...</td></tr>`;
+
+  if (typeof google !== "undefined" && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function (resposta) {
+        listaEquipamentosGlobal = resposta || [];
+        renderizarTabelaEquipamentos(listaEquipamentosGlobal);
+      })
+      .withFailureHandler(function (err) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--cor-acaoalerta);">Erro ao carregar dados.</td></tr>`;
+      })
+      .roteadorChamado({ qualFuncao: "obterEquipamentos" });
+  }
 }
+
+// 2. RENDERIZAR TABELA
+function renderizarTabelaEquipamentos(lista) {
+  const tbody = document.getElementById("tabela-equipamentos-body");
+  tbody.innerHTML = "";
+
+  if (!lista || lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: var(--text-color-faded);">Nenhum equipamento cadastrado.</td></tr>`;
+    return;
+  }
+
+  lista.forEach((item) => {
+    let classeStatus = "ativo";
+    if (item.status === "Em Manutenção") classeStatus = "manutencao";
+    if (item.status === "Inativo") classeStatus = "inativo";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>#${item.id}</strong></td>
+      <td>${item.numero}</td>
+      <td>${item.nome}</td>
+      <td>${item.modelo}</td>
+      <td>${item.tipo}</td>
+      <td>${item.local}</td>
+      <td><span class="status-badge ${classeStatus}">${item.status}</span></td>
+      <td>${item.dataAdd}</td>
+      <td>${item.obs || "-"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// 3. BUSCA EM TEMPO REAL NO INPUT (BUSCA LOCAL SEM REQUISITAR O SERVIDOR)
+function filtrarTabelaEquipamentos() {
+  const termo = document.getElementById("inputBuscaEquipamento").value.toLowerCase();
+  const filtrados = listaEquipamentosGlobal.filter((eq) => {
+    return Object.values(eq).some((val) =>
+      String(val).toLowerCase().includes(termo)
+    );
+  });
+  renderizarTabelaEquipamentos(filtrados);
+}
+
+// 4. CONTROLE DOS MODAIS
+function abrirModalCadastroEquipamento() {
+  document.getElementById("modalCadastroEquipamento").style.display = "flex";
+  document.getElementById("modalCadastroEquipamento").classList.add("modal-open");
+}
+
+function fecharModalCadastroEquipamento() {
+  document.getElementById("formCadastroEquipamento").reset();
+  document.getElementById("modalCadastroEquipamento").style.display = "none";
+  document.getElementById("modalCadastroEquipamento").classList.remove("modal-open");
+}
+
+function abrirModalBuscaEquipamento() {
+  document.getElementById("modalBuscaEquipamento").style.display = "flex";
+  document.getElementById("modalBuscaEquipamento").classList.add("modal-open");
+}
+
+function fecharModalBuscaEquipamento() {
+  document.getElementById("buscaNumEqInput").value = "";
+  document.getElementById("modalBuscaEquipamento").style.display = "none";
+  document.getElementById("modalBuscaEquipamento").classList.remove("modal-open");
+}
+
+function fecharModalEdicaoEquipamento() {
+  document.getElementById("formEdicaoEquipamento").reset();
+  document.getElementById("modalEdicaoEquipamento").style.display = "none";
+  document.getElementById("modalEdicaoEquipamento").classList.remove("modal-open");
+}
+
+// 5. SALVAR NOVO CADASTRO VIA ROTEADOR
+function salvarCadastroEquipamento() {
+  const dadosEnvio = {
+    qualFuncao: "salvarEquipamento",
+    numero: document.getElementById("cadNumEq").value.trim(),
+    nome: document.getElementById("cadNomeEq").value.trim(),
+    modelo: document.getElementById("cadModeloEq").value.trim(),
+    tipo: document.getElementById("cadTipoEq").value.trim(),
+    local: document.getElementById("cadLocalEq").value.trim(),
+    status: document.getElementById("cadStatusEq").value,
+    obs: document.getElementById("cadObsEq").value.trim()
+  };
+
+  if (typeof google !== "undefined" && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function (resposta) {
+        fecharModalCadastroEquipamento();
+        carregarEquipamentos();
+      })
+      .roteadorChamado(dadosEnvio);
+  }
+}
+
+// 6. BUSCAR PARA EDITAR (PESQUISA NA MEMÓRIA DA APLICAÇÃO)
+function buscarEquipamentoParaEdicao() {
+  const numBusca = document.getElementById("buscaNumEqInput").value.trim();
+
+  if (!numBusca) {
+    alert("Informe o número do equipamento!");
+    return;
+  }
+
+  const eq = listaEquipamentosGlobal.find(
+    (item) => item.numero.toLowerCase() === numBusca.toLowerCase()
+  );
+
+  if (!eq) {
+    alert("Equipamento não encontrado!");
+    return;
+  }
+
+  // Preenche o formulário de edição
+  document.getElementById("editIdEq").value = eq.id;
+  document.getElementById("editNumEq").value = eq.numero;
+  document.getElementById("editNomeEq").value = eq.nome;
+  document.getElementById("editModeloEq").value = eq.modelo;
+  document.getElementById("editTipoEq").value = eq.tipo;
+  document.getElementById("editLocalEq").value = eq.local;
+  document.getElementById("editStatusEq").value = eq.status;
+  document.getElementById("editObsEq").value = eq.obs;
+
+  fecharModalBuscaEquipamento();
+  document.getElementById("modalEdicaoEquipamento").style.display = "flex";
+  document.getElementById("modalEdicaoEquipamento").classList.add("modal-open");
+}
+
+// 7. SALVAR ALTERAÇÃO VIA ROTEADOR
+function salvarEdicaoEquipamento() {
+  const dadosEnvio = {
+    qualFuncao: "atualizarEquipamento",
+    id: parseInt(document.getElementById("editIdEq").value),
+    numero: document.getElementById("editNumEq").value.trim(),
+    nome: document.getElementById("editNomeEq").value.trim(),
+    modelo: document.getElementById("editModeloEq").value.trim(),
+    tipo: document.getElementById("editTipoEq").value.trim(),
+    local: document.getElementById("editLocalEq").value.trim(),
+    status: document.getElementById("editStatusEq").value,
+    obs: document.getElementById("editObsEq").value.trim()
+  };
+
+  if (typeof google !== "undefined" && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function (resposta) {
+        fecharModalEdicaoEquipamento();
+        carregarEquipamentos();
+      })
+      .roteadorChamado(dadosEnvio);
+  }
+}
+
+// 8. APAGAR EQUIPAMENTO VIA ROTEADOR
+function apagarEquipamento() {
+  const idEquipamento = parseInt(document.getElementById("editIdEq").value);
+  
+  if (!idEquipamento) {
+    console.error("Numero do equipamento invalido ou não encontrado");
+    return;
+  }
+
+  const modalConfirm = document.getElementById("modalConfirmarExclusaoEquipamento")
+  modalConfirm.style.display = "flex";
+  modalConfirm.classList.add("modal-open");
+}
+
+//fecha modal de confirmação de exclusão
+function fecharModalConfirmacaoExclusao(){
+  const modalConfirm = document.getElementById("modalConfirmarExclusaoEquipamento");
+  modalConfirm.style.display = "none";
+  modalConfirm.classList.remove("modal-open");
+}
+
+
+function confirmarExclusaoEquipamento(){
+  
+  const idEquipamento = parseInt(document.getElementById("editIdEq").value);
+
+  if(typeof google !== "undefined" && google.script && google.script.run){
+    google.script.run
+      .withSuccessHandler(function (resposta){
+
+        fecharModalConfirmacaoExclusao();
+        fecharModalEdicaoEquipamento();
+        carregarEquipamentos();
+      
+      })
+      .withFailureHandler(function (err){
+        alert("Erro ao excluir equipamento:" + err);
+        fecharModalConfirmacaoExclusao();
+        
+      })
+      .roteadorChamado({
+        qualFuncao: "deletarEquipamento",
+        id: idEquipamento
+      });
+  }
+}
+
+// Array que mantém a lista de itens temporários no celular do usuário
+let listaItensNfeTemp = [];
+
+// 1. ADICIONAR ITEM À LISTA TEMPORÁRIA
+function adicionarItemNaListaNfe() {
+  const inputCodigo = document.getElementById("nfeCodigoBarras");
+  const inputQtd = document.getElementById("nfeQuantidade");
+
+  const codigo = inputCodigo.value.trim();
+  const quantidade = parseInt(inputQtd.value);
+
+  if (!codigo) {
+    alert("Por favor, digite o código de barras.");
+    inputCodigo.focus();
+    return;
+  }
+
+  if (isNaN(quantidade) || quantidade <= 0) {
+    alert("Informe uma quantidade válida maior que zero.");
+    inputQtd.focus();
+    return;
+  }
+
+  // Se o código já existir na lista, apenas soma a quantidade
+  const indexExistente = listaItensNfeTemp.findIndex(item => item.codigo === codigo);
+
+  if (indexExistente !== -1) {
+    listaItensNfeTemp[indexExistente].quantidade += quantidade;
+  } else {
+    listaItensNfeTemp.push({
+      codigo: codigo,
+      quantidade: quantidade
+    });
+  }
+
+  // Reseta campos e devolve o foco para o código de barras
+  inputCodigo.value = "";
+  inputQtd.value = "1";
+  inputCodigo.focus();
+
+  renderizarTabelaNfeTemp();
+}
+
+// Permitir adicionar apertando "Enter" no teclado do celular
+function tratarTeclaEnterNfe(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    adicionarItemNaListaNfe();
+  }
+}
+
+// 2. RENDERIZAR TABELA NA TELA
+function renderizarTabelaNfeTemp() {
+  const tbody = document.getElementById("tabela-nfe-body");
+  const totalSpan = document.getElementById("totalItensNfe");
+  
+  tbody.innerHTML = "";
+  totalSpan.textContent = listaItensNfeTemp.length;
+
+  if (listaItensNfeTemp.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-color-faded);">
+          Nenhum item adicionado à lista.
+        </td>
+      </tr>`;
+    return;
+  }
+
+  listaItensNfeTemp.forEach((item, index) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>#${index + 1}</strong></td>
+      <td style="font-family: monospace; font-size: 14px; color: var(--text-color-light);">${item.codigo}</td>
+      <td>
+        <input type="number" min="1" value="${item.quantidade}" 
+               onchange="alterarQtdNfeTemp(${index}, this.value)" 
+               style="width: 70px; height: 30px; background-color: var(--cor-fundoprincipal); border: 1px solid var(--cor-linhas); color: white; border-radius: 6px; text-align: center;" />
+      </td>
+      <td style="text-align: center;">
+        <button type="button" class="btn-table-delete" onclick="removerItemNfeTemp(${index})" title="Remover item">
+          <i class="bi bi-trash-fill"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// 3. ALTERAR QUANTIDADE DIRETO NA TABELA
+function alterarQtdNfeTemp(index, novaQtd) {
+  const qtd = parseInt(novaQtd);
+  if (!isNaN(qtd) && qtd > 0) {
+    listaItensNfeTemp[index].quantidade = qtd;
+  } else {
+    renderizarTabelaNfeTemp();
+  }
+}
+
+// 4. REMOVER ITEM
+function removerItemNfeTemp(index) {
+  listaItensNfeTemp.splice(index, 1);
+  renderizarTabelaNfeTemp();
+}
+
+// 5. LIMPAR TODA A LISTA
+function limparTodaListaNfe() {
+  if (listaItensNfeTemp.length === 0) return;
+  if (confirm("Deseja realmente limpar todos os itens da lista?")) {
+    listaItensNfeTemp = [];
+    renderizarTabelaNfeTemp();
+  }
+}
+
+// 6. MODAL DE SUCESSO E CONFIRMAÇÃO DE ENVIO
+function abrirModalSucessoNfe(mensagem) {
+  if (mensagem) {
+    document.getElementById("msgSucessoNfeTexto").textContent = mensagem;
+  }
+  const modal = document.getElementById("modalSucessoNfe");
+  modal.style.display = "flex";
+  modal.classList.add("modal-open");
+}
+
+function fecharModalSucessoNfe() {
+  const modal = document.getElementById("modalSucessoNfe");
+  modal.style.display = "none";
+  modal.classList.remove("modal-open");
+}
+
+function solicitarConfirmacaoEnvioNfe() {
+  if (listaItensNfeTemp.length === 0) {
+    alert("Adicione pelo menos um item à lista antes de enviar.");
+    return;
+  }
+
+  document.getElementById("confirmTotalItens").textContent = listaItensNfeTemp.length;
+  const modalConfirm = document.getElementById("modalConfirmarEnvioNfe");
+  modalConfirm.style.display = "flex";
+  modalConfirm.classList.add("modal-open");
+}
+
+function fecharModalConfirmarEnvioNfe() {
+  const modalConfirm = document.getElementById("modalConfirmarEnvioNfe");
+  modalConfirm.style.display = "none";
+  modalConfirm.classList.remove("modal-open");
+}
+
+// 7. ENVIO FINAL PARA O GOOGLE APPS SCRIPT
+function enviarPedidoNfeFinal() {
+  let usuarioLogado = "";
+
+  if (typeof nomeUsuarioLogado !== "undefined" && nomeUsuarioLogado) {
+    usuarioLogado = nomeUsuarioLogado;
+  } else if (document.getElementById("ncUsuarioLogado") && document.getElementById("ncUsuarioLogado").value) {
+    usuarioLogado = document.getElementById("ncUsuarioLogado").value;
+  } else if (document.getElementById("solicitante") && document.getElementById("solicitante").value) {
+    usuarioLogado = document.getElementById("solicitante").value;
+  }
+
+  const dadosEnvio = {
+    qualFuncao: "processarPedidoNfe",
+    solicitante: usuarioLogado || "Usuário do Portal",
+    itens: listaItensNfeTemp
+  };
+
+  if (typeof google !== "undefined" && google.script && google.script.run) {
+    if (typeof fecharModalConfirmarEnvioNfe === "function") fecharModalConfirmarEnvioNfe();
+
+    google.script.run
+      .withSuccessHandler(function (resposta) {
+        if (resposta && resposta.status === "sucesso") {
+          listaItensNfeTemp = [];
+          renderizarTabelaNfeTemp();
+          abrirModalSucessoNfe(resposta.mensagem);
+        } else {
+          abrirModalSucessoNfe("Aviso: " + (resposta.mensagem || "Erro ao processar envio."));
+        }
+      })
+      .withFailureHandler(function (err) {
+        abrirModalSucessoNfe("Erro de comunicação com o servidor: " + err);
+      })
+      .roteadorChamado(dadosEnvio);
+  }
+}
+
 </script>
