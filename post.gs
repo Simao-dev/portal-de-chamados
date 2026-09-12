@@ -1,8 +1,20 @@
+/** HELPER PARA OBTER A PLANILHA ATIVA REUTILIZANDO A REFERÊNCIA COM MÁXIMO DESEMPENHO */
+function getAppSpreadsheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    throw new Error("Não foi possível acessar a planilha ativa.");
+  }
+  return ss;
+}
 
-/**  CONFIGURAÇÕES INICIAIS DA PÁGINA */
+/** CONFIGURAÇÕES INICIAIS DA PÁGINA */
 function doGet(e) {
-  /**O template limpa qualquer renderização estática anterior */
-  var html = HtmlService.createTemplateFromFile('Login');
+  var html;
+  try {
+    html = HtmlService.createTemplateFromFile('Login');
+  } catch (err) {
+    html = HtmlService.createTemplateFromFile('login');
+  }
   
   return html.evaluate()
       .setTitle('Portal de Chamados')
@@ -10,12 +22,35 @@ function doGet(e) {
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
-/** FUNÇÃO PARA PERMITIR IMPORTAÇÃO DE CSS/JS */
-
+/** FUNÇÃO PARA PERMITIR IMPORTAÇÃO DE CSS/JS COM TRATAMENTO DE CASE-SENSITIVITY DO GOOGLE APPS SCRIPT */
 function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+  if (!filename) return "";
+  
+  var tentativas = [
+    filename,
+    filename.toLowerCase(),
+    filename.toUpperCase(),
+    filename.charAt(0).toUpperCase() + filename.slice(1),
+    filename.charAt(0).toLowerCase() + filename.slice(1),
+    "javaScript",
+    "JavaScript",
+    "style",
+    "Style",
+    "Login",
+    "login",
+    "Sistema",
+    "sistema"
+  ];
+  
+  for (var i = 0; i < tentativas.length; i++) {
+    try {
+      var output = HtmlService.createHtmlOutputFromFile(tentativas[i]);
+      if (output) return output.getContent();
+    } catch(e) {}
+  }
+  
+  return "";
 }
-
 
 /** INDETIFICA QUAL O TIPO DE SOLICITAÇÃO E DESTINA A FUNÇÃO CORRESPONDENTE */
 function roteadorChamado(data) {
@@ -95,51 +130,57 @@ function roteadorChamado(data) {
 /** LÓGICA DE AUTENTICAÇÃO E BANCO DE DADOS */ 
 
 function autenticarUsuario(matricula, senha) {
-  const ss = SpreadsheetApp.openById("");
-  const sheet = ss.getSheetByName("users"); 
-  
-  if (!sheet) {
-    throw new Error("Aba 'users' não encontrada.");
-  }
-  
-  SpreadsheetApp.flush();
-  const dados = sheet.getDataRange().getValues();
-  
-  const matDigitada = String(matricula).trim();
-  const senhaDigitada = String(senha).trim();
-  
-  for (let i = 1; i < dados.length; i++) {
-    let usuarioPlanilha = dados[i][5] ? String(dados[i][5]).trim() : "";
-    let senhaPlanilha = dados[i][8] ? String(dados[i][8]).trim() : "";
+  try {
+    const ss = getAppSpreadsheet();
+    const sheet = ss.getSheetByName("users"); 
     
-    let nome = dados[i][1] ? String(dados[i][1]).trim() : "";
-    let sobrenome = dados[i][2] ? String(dados[i][2]).trim() : "";
-    let nomeCompleto = nome + " " + sobrenome;
-    
-    let funcaoSetor = dados[i][3] ? String(dados[i][3]).trim() : "Geral";
-    let nivelPermissao = dados[i][7] ? String(dados[i][7]).toLowerCase().trim() : "cliente";
-
-    if (usuarioPlanilha === matDigitada && senhaPlanilha === senhaDigitada) {
-      
-      return {
-        nivel: nivelPermissao,
-        nomeCompleto: nomeCompleto,
-        funcao: funcaoSetor
-      };
+    if (!sheet) {
+      throw new Error("Aba 'users' não encontrada.");
     }
+    
+    const dados = sheet.getDataRange().getValues();
+    
+    const matDigitada = String(matricula || "").trim();
+    const senhaDigitada = String(senha || "").trim();
+    
+    for (let i = 1; i < dados.length; i++) {
+      let usuarioPlanilha = dados[i][5] !== undefined && dados[i][5] !== null ? String(dados[i][5]).trim() : "";
+      let senhaPlanilha = dados[i][8] !== undefined && dados[i][8] !== null ? String(dados[i][8]).trim() : "";
+      
+      let nome = dados[i][1] ? String(dados[i][1]).trim() : "";
+      let sobrenome = dados[i][2] ? String(dados[i][2]).trim() : "";
+      let nomeCompleto = (nome + " " + sobrenome).trim();
+      
+      let funcaoSetor = dados[i][3] ? String(dados[i][3]).trim() : "Geral";
+      let nivelPermissao = dados[i][7] ? String(dados[i][7]).toLowerCase().trim() : "cliente";
+
+      if (usuarioPlanilha === matDigitada && senhaPlanilha === senhaDigitada) {
+        return {
+          nivel: nivelPermissao,
+          nomeCompleto: nomeCompleto,
+          funcao: funcaoSetor
+        };
+      }
+    }
+    
+    return null; 
+  } catch (erro) {
+    return { status: "erro", mensagem: erro.message };
   }
-  
-  return null; 
 }
 
 function carregarPaginaSistema() {
-  return HtmlService.createHtmlOutputFromFile('Sistema').getContent();
+  try {
+    return HtmlService.createHtmlOutputFromFile('Sistema').getContent();
+  } catch (e) {
+    return HtmlService.createHtmlOutputFromFile('sistema').getContent();
+  }
 }
 
 /** AREA DE CHAMADOS / CADASTRA /ALTERA / REQUISIÇÃO / ATUALIZAÇÃO */
 
 function entradaDeInformacoes(data) {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const main = ss.getSheetByName("main");
 
   if (main.getLastRow() === 0) {
@@ -147,6 +188,9 @@ function entradaDeInformacoes(data) {
   }
 
   const idChamado = data.idDoChamado; 
+  const agora = new Date();
+  const horaStr = Utilities.formatDate(agora, Session.getScriptTimeZone(), "HH:mm:ss");
+  const dataStr = Utilities.formatDate(agora, Session.getScriptTimeZone(), "dd/MM/yyyy");
 
   if (!idChamado || idChamado === "") {
     const ultimaLinha = main.getLastRow();
@@ -154,11 +198,10 @@ function entradaDeInformacoes(data) {
 
     if (ultimaLinha > 1) {
       const idsExistentes = main.getRange(2, 1, ultimaLinha - 1).getValues().flat();
-      maiorId = idsExistentes.length > 0 ? Math.max(...idsExistentes.map(Number)) : 0;
+      maiorId = idsExistentes.length > 0 ? Math.max(...idsExistentes.map(Number).filter(n => !isNaN(n))) : 0;
     }
 
     const novoId = maiorId + 1;
-    const agora = new Date();
 
     main.appendRow([
       novoId,
@@ -168,12 +211,18 @@ function entradaDeInformacoes(data) {
       data.statusChamado,
       data.descricao,
       data.informacaoExtra,
-      Utilities.formatDate(agora, Session.getScriptTimeZone(), "HH:mm:ss"),
-      Utilities.formatDate(agora, Session.getScriptTimeZone(), "dd/MM/yyyy"),
+      horaStr,
+      dataStr,
       data.tipoRepeticao || "", // Coluna J
       data.comando || ""        // Coluna K
     ]);
-    return "Chamado cadastrado com sucesso!";
+    return {
+      status: "sucesso",
+      mensagem: "Chamado cadastrado com sucesso!",
+      id: novoId,
+      hora: horaStr,
+      data: dataStr
+    };
 
   } else {
     const dadosPlanilha = main.getDataRange().getValues();
@@ -188,9 +237,8 @@ function entradaDeInformacoes(data) {
     }
 
     if (linhaParaEditar) {
-      const linhaOriginal = main.getRange(linhaParaEditar, 1, 1, main.getLastColumn()).getValues()[0];
+      const linhaOriginal = dadosPlanilha[linhaParaEditar - 1];
 
-      // Atualiza mantendo os registros originais ou novos valores modificados pela tela de pesquisa
       const novaLinhaDeDados = [
         idNumero,
         data.tipoDoChamado,
@@ -199,72 +247,92 @@ function entradaDeInformacoes(data) {
         data.statusChamado,
         data.descricao,
         data.informacaoExtra,
-        linhaOriginal[7], 
-        linhaOriginal[8],
+        linhaOriginal[7] || horaStr, 
+        linhaOriginal[8] || dataStr,
         data.tipoRepeticao !== undefined ? data.tipoRepeticao : (linhaOriginal[9] || ""),
         data.comando !== undefined ? data.comando : (linhaOriginal[10] || "")
       ];
 
       main.getRange(linhaParaEditar, 1, 1, novaLinhaDeDados.length).setValues([novaLinhaDeDados]);
-      return "Chamado atualizado com sucesso!";
+      return {
+        status: "sucesso",
+        mensagem: "Chamado atualizado com sucesso!",
+        id: idNumero,
+        hora: linhaOriginal[7] || horaStr,
+        data: linhaOriginal[8] || dataStr
+      };
       
     } else {
-      return "Erro: Chamado não encontrado.";
+      return { status: "erro", mensagem: "Erro: Chamado não encontrado." };
     }
   }
 }
  
 /** Faz a REQUISIÇÃO dos dados no banco para exibir na tabela */
 function lerChamados(data) {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const main = ss.getSheetByName("main");
+  if (!main) return [];
 
-  /**converte dada e hora pra texto */
-  main.getRange("H:I").activate();
-  main.getActiveRangeList().setNumberFormat("@");
-  
   const lines = main.getDataRange().getValues();
+  if (lines.length <= 1) return [];
 
-  /**Remove cabeçalho */
   lines.shift();
+  lines.sort((a, b) => Number(b[0]) - Number(a[0]));
 
-  lines.sort((a, b) => b[0] - a[0]);
+  const fusoHorario = Session.getScriptTimeZone();
 
-  /** Transforma em array de objetos */
-  return lines.map(l => ({
-    id: l[0],
-    tipoDoChamado: l[1],
-    solicitante: l[2],
-    funcao: l[3],
-    statusChamado: l[4],
-    descricao: l[5],
-    informacaoExtra: l[6],
-    hora: l[7],
-    data: l[8],
-  }));
+  return lines.map(l => {
+    let horaVal = l[7];
+    let dataVal = l[8];
+
+    if (horaVal instanceof Date) {
+      horaVal = Utilities.formatDate(horaVal, fusoHorario, "HH:mm:ss");
+    } else {
+      horaVal = String(horaVal || "").trim();
+    }
+
+    if (dataVal instanceof Date) {
+      dataVal = Utilities.formatDate(dataVal, fusoHorario, "dd/MM/yyyy");
+    } else {
+      dataVal = String(dataVal || "").trim();
+    }
+
+    return {
+      id: l[0],
+      tipoDoChamado: l[1],
+      solicitante: l[2],
+      funcao: l[3],
+      statusChamado: l[4],
+      descricao: l[5],
+      informacaoExtra: l[6],
+      hora: horaVal,
+      data: dataVal,
+      tipoRepeticao: l[9] || "",
+      comando: l[10] || ""
+    };
+  });
 }
 
-/** AREA DE CASTRO/ALTERAÇÃO/EXCLUSÃO e EXIBIÇÃO DE USUARIOS */
+/** AREA DE CADASTRO/ALTERAÇÃO/EXCLUSÃO e EXIBIÇÃO DE USUARIOS */
 
 function cadastraUsuario(data) {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const main = ss.getSheetByName("users");
 
-  /** Garante cabeçalho com as novas colunas */
   if (main.getLastRow() === 0) {
     main.appendRow(["ID", "Nome", "Sobrenome", "Função", "Cargo", "Usuario", "Ramal", "Permissão", "Senha"]);
   }
 
   const id = data.idUsuario;
 
-  /** Adiciona um novo caso id seja vazio */
   if (!id || id === "") {
     const ultimaLinha = main.getLastRow();
     let maiorId = 0;
 
     if (ultimaLinha > 1) {
       const idsExistentes = main.getRange(2, 1, ultimaLinha - 1).getValues().flat();
-      maiorId = idsExistentes.length > 0 ? Math.max(...idsExistentes.map(Number)) : 0;
+      maiorId = idsExistentes.length > 0 ? Math.max(...idsExistentes.map(Number).filter(n => !isNaN(n))) : 0;
     }
 
     const novoId = maiorId + 1;
@@ -280,16 +348,14 @@ function cadastraUsuario(data) {
       data.permissao,
       data.senha
     ]);
-    return "Usuário cadastrado com sucesso!";
+    return { status: "sucesso", mensagem: "Usuário cadastrado com sucesso!", id: novoId };
 
   } else {
-
-    /** Altera caso tenha ID */
     const dados = main.getDataRange().getValues();
     let linhaParaEditar;
     
     for (let i = 0; i < dados.length; i++) {
-      if (dados[i][0] == id) {
+      if (Number(dados[i][0]) == Number(id)) {
         linhaParaEditar = i + 1;
         break;
       }
@@ -297,7 +363,7 @@ function cadastraUsuario(data) {
 
     if (linhaParaEditar) {
       const novaLinha = [
-        id,
+        Number(id),
         data.nome,
         data.sobrenome,
         data.funcao,
@@ -309,61 +375,64 @@ function cadastraUsuario(data) {
       ];
 
       main.getRange(linhaParaEditar, 1, 1, novaLinha.length).setValues([novaLinha]);
-      return "Usuário atualizado com sucesso!";
+      return { status: "sucesso", mensagem: "Usuário atualizado com sucesso!", id: Number(id) };
 
     } else {
-      return "Erro: Usuário não encontrado.";
+      return { status: "erro", mensagem: "Erro: Usuário não encontrado." };
     }
   }
 }
 
 /** REMOVE USUÁRIO */
 function deletarUsuario(data) {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const main = ss.getSheetByName("users");
-  const ultimaLinha = main.getLastRow();
 
-  if (data.idUsuario === ""){
-    return "Nenhum id encontrado"
+  if (!data || data.idUsuario === "" || data.idUsuario === undefined) {
+    return { status: "erro", mensagem: "Nenhum id encontrado" };
   }
-  for (let i = 1; i <= ultimaLinha; i++) {
-    let idLinha = main.getRange(i, 1).getValue();
-    if (data.idUsuario == idLinha) {
-      main.deleteRow(i);
-      return "Usuário deletado";
+  
+  const idProcurado = Number(data.idUsuario);
+  const dados = main.getDataRange().getValues();
+
+  for (let i = 1; i < dados.length; i++) {
+    if (Number(dados[i][0]) === idProcurado) {
+      main.deleteRow(i + 1);
+      return { status: "sucesso", mensagem: "Usuário deletado", id: idProcurado };
     }
   }
-  return "ID do usuário não encontrado na planilha";
+  return { status: "erro", mensagem: "ID do usuário não encontrado na planilha" };
 }
 
-/** Obtém os nomes e cargos da planilha de usuários e os retorna como um array de objetos para preencher o select solicitante.*/
 function listarNomeCargo() {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const main = ss.getSheetByName("users");
+  if (!main) return [];
 
   const dados = main.getDataRange().getValues();
+  if (dados.length <= 1) return [];
+
   const cabecalho = dados.shift();
   const indiceNome = cabecalho.indexOf("Nome");
   const indiceFuncao = cabecalho.indexOf("Função");
 
-  /** Retorna um array de strings no formato "Nome - Cargo" para o <select> */
   return dados.map(l => ({
-    nome: l[indiceNome],
-    cargo: l[indiceFuncao]
+    nome: l[indiceNome !== -1 ? indiceNome : 1],
+    cargo: l[indiceFuncao !== -1 ? indiceFuncao : 3]
   }));
 }
 
-/** EXIBE as infomações de usuarios na aba castro de usuarios */
 function lerUsuarios(data) {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const main = ss.getSheetByName("users");
-  
+  if (!main) return [];
+
   const lines = main.getDataRange().getValues();
+  if (lines.length <= 1) return [];
+
   lines.shift(); 
+  lines.sort((a, b) => Number(b[0]) - Number(a[0]));
 
-  lines.sort((a, b) => b[0] - a[0]);
-
-  /** Transforma em array de objetos mapeando até os índices 7 (H) e 8 (I) */ 
   return lines.map(l => ({
     id: l[0],
     nome: l[1],
@@ -372,14 +441,15 @@ function lerUsuarios(data) {
     cargo: l[4],
     usuario: l[5],
     ramal: l[6],
-    permissao: l[7] // Coluna H
+    permissao: l[7],
+    senha: l[8] || ""
   }));
 }
 
 /** PÁGINAS DE METRICAS */
 function buscarChamadosPorPeriodo(dados) {
   try {
-    const ss = SpreadsheetApp.openById("");
+    const ss = getAppSpreadsheet();
     const planilha = ss.getSheetByName('main');
     if (!planilha) return { status: 'erro', mensagem: 'Aba main não localizada.' };
 
@@ -393,7 +463,6 @@ function buscarChamadosPorPeriodo(dados) {
     const todosOsValores = planilha.getRange(2, 1, ultimaLinha - 1, 9).getValues();
     const totalGeral = todosOsValores.length;
 
-    /** Configura o limite de busca de forma segura (ignora horas na comparação) */ 
     const dataInicial = new Date(dados.dataInicial + 'T00:00:00');
     const dataFinal = new Date(dados.dataFinal + 'T23:59:59');
 
@@ -407,11 +476,9 @@ function buscarChamadosPorPeriodo(dados) {
 
       let dataDoRegistro;
 
-      /** Se a célula já for um objeto Date nativo do Google Sheets */ 
       if (dataNaCelula instanceof Date) {
         dataDoRegistro = new Date(dataNaCelula.getTime());
       } else {
-        /** Se for string no formato "dd/MM/yyyy" */ 
         const partes = String(dataNaCelula).split('/');
         if (partes.length === 3) {
           dataDoRegistro = new Date(Number(partes[2]), Number(partes[1]) - 1, Number(partes[0]));
@@ -421,14 +488,12 @@ function buscarChamadosPorPeriodo(dados) {
       if (dataDoRegistro && dataDoRegistro >= dataInicial && dataDoRegistro <= dataFinal) {
         contadorPeriodo++;
 
-        /** Contagem de Solicitantes */ 
         const nomeSolicitante = row[colunas.solicitante];
         if (nomeSolicitante) {
           const nomeNormalizado = String(nomeSolicitante).trim();
           contagemPorSolicitante[nomeNormalizado] = (contagemPorSolicitante[nomeNormalizado] || 0) + 1;
         }
 
-        /** Contagem de Tipos de Chamado */ 
         const tipoChamado = row[colunas.tipo];
         if (tipoChamado) {
           const tipoNormalizado = String(tipoChamado).trim();
@@ -437,7 +502,6 @@ function buscarChamadosPorPeriodo(dados) {
       }
     });
 
-    /** Encontra o solicitante mais ativo */ 
     let solicitanteMaisAtivo = "N/A";
     let chamadosDoMaisAtivo = 0;
     for (const s in contagemPorSolicitante) {
@@ -447,7 +511,6 @@ function buscarChamadosPorPeriodo(dados) {
       }
     }
 
-    /** Encontra o tipo de chamado mais ativo */ 
     let tipoMaisAtivo = "N/A";
     let chamadosDoTipoMaisAtivo = 0;
     for (const t in contagemPorTipo) {
@@ -457,7 +520,6 @@ function buscarChamadosPorPeriodo(dados) {
       }
     }
 
-    /** Calcula as porcentagens com base no volume encontrado */ 
     const porcentagemPeriodo = totalGeral > 0 ? (contadorPeriodo / totalGeral) * 100 : 0;
     const porcentagemSolicitante = contadorPeriodo > 0 ? (chamadosDoMaisAtivo / contadorPeriodo) * 100 : 0;
     const porcentagemTipo = contadorPeriodo > 0 ? (chamadosDoTipoMaisAtivo / contadorPeriodo) * 100 : 0;
@@ -480,10 +542,10 @@ function buscarChamadosPorPeriodo(dados) {
       return { status: 'erro', mensagem: 'Falha no cálculo métrico: ' + e.message };
   }
 }
-  /** FUNÇÃO QUE BUSCA CHAMADO POR ID */
+
 function buscarUnicoChamado(idBusca) {
   try {
-    var planilha = SpreadsheetApp.openById("");
+    var planilha = getAppSpreadsheet();
     var aba = planilha.getSheetByName("main"); 
     
     if (!aba) {
@@ -515,8 +577,8 @@ function buscarUnicoChamado(idBusca) {
       informacaoExtra: linhaEncontrada[6],
       hora: linhaEncontrada[7],           
       data: linhaEncontrada[8],
-      tipoRepeticao: linhaEncontrada[9] || "", // Captura a Coluna J
-      comando: linhaEncontrada[10] || ""       // Captura a Coluna K
+      tipoRepeticao: linhaEncontrada[9] || "",
+      comando: linhaEncontrada[10] || ""
     };
 
   } catch (erro) {
@@ -524,9 +586,8 @@ function buscarUnicoChamado(idBusca) {
   }
 }
 
-/** CADASTRA OU EDITA TAREFAS DE ROTINA */
 function cadastraTarefa(data) {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   let sheet = ss.getSheetByName("tasks");
   const mainSheet = ss.getSheetByName("main");
   
@@ -539,7 +600,6 @@ function cadastraTarefa(data) {
   let novoId;
   let mensagemRetorno;
 
-  // Compactação tripla segura para preservar as colunas físicas da aba tasks
   const descricaoCombinada = data.rotina + " // " + data.comando + " // " + data.descricao;
 
   if (!id || id === "") {
@@ -547,7 +607,7 @@ function cadastraTarefa(data) {
     let maiorId = 0;
     if (ultimaLinha > 1) {
       const ids = sheet.getRange(2, 1, ultimaLinha - 1).getValues().flat();
-      maiorId = Math.max(...ids.map(Number));
+      maiorId = Math.max(...ids.map(Number).filter(n => !isNaN(n)));
     }
     novoId = maiorId + 1;
 
@@ -581,17 +641,16 @@ function cadastraTarefa(data) {
       ]]);
       mensagemRetorno = "Tarefa de rotina atualizada!";
     } else {
-      return "Erro: Tarefa não encontrada.";
+      return { status: "erro", mensagem: "Erro: Tarefa não encontrada." };
     }
   }
 
-  /** GERAÇÃO IMEDIATA DO CHAMADO EXPANDIDO NA MAIN */ 
   if ((!id || id === "") && mainSheet) {
     const ultimaLinhaMain = mainSheet.getLastRow();
     let maiorIdMain = 0;
     if (ultimaLinhaMain > 1) {
       const idsMain = mainSheet.getRange(2, 1, ultimaLinhaMain - 1).getValues().flat();
-      maiorIdMain = Math.max(...idsMain.map(Number));
+      maiorIdMain = Math.max(...idsMain.map(Number).filter(n => !isNaN(n)));
     }
     
     const agora = new Date();
@@ -602,31 +661,31 @@ function cadastraTarefa(data) {
     let partesDoNome = solicitanteOriginal.split(" ");
     let solicitanteCurto = partesDoNome[0] + (partesDoNome[1] ? " " + partesDoNome[1] : "");
 
-    // Carimba de forma exata: Coluna J (índice 10) e Coluna K (índice 11)
     mainSheet.appendRow([
-      maiorIdMain + 1,        // Coluna A (ID)                                    
-      "Rotina do setor",      // Coluna B (Tipo)                                    
-      solicitanteCurto,       // Coluna C (Solicitante)                                  
-      data.funcaoLogada || "Geral", // Coluna D (Função)                              
-      "Pendente",             // Coluna E (Status)                                    
-      data.descricao,         // Coluna F (Descrição)                                    
-      data.rotina,            // Coluna G (Info Extra)
-      horaAtualStr,           // Coluna H (Hora)                                    
-      dataAtualStr,           // Coluna I (Data)
-      data.tipoRepeticao,     // Coluna J (NOVO: Tipo de Repetição)
-      data.comando            // Coluna K (NOVO: Comando/Instrução)
+      maiorIdMain + 1,
+      "Rotina do setor",
+      solicitanteCurto,
+      data.funcaoLogada || "Geral",
+      "Pendente",
+      data.descricao,
+      data.rotina,
+      horaAtualStr,
+      dataAtualStr,
+      data.tipoRepeticao,
+      data.comando
     ]);
   }
 
-  return mensagemRetorno;
+  return { status: "sucesso", mensagem: mensagemRetorno, id: novoId };
 }
-/** RETORNA TODAS AS TAREFAS CADASTRADAS */
+
 function lerTarefas() {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const sheet = ss.getSheetByName("tasks");
   if (!sheet) return [];
   
   const linhas = sheet.getDataRange().getValues();
+  if (linhas.length <= 1) return [];
   linhas.shift(); 
   
   const fusoHorario = Session.getScriptTimeZone();
@@ -635,12 +694,10 @@ function lerTarefas() {
     let dataFormatada = l[3];
     let horaFormatada = l[4];
     
-    /**  formata a data para texto*/
     if (dataFormatada instanceof Date) {
       dataFormatada = Utilities.formatDate(dataFormatada, fusoHorario, "dd/MM/yyyy");
     }
     
-    /**  extrai apenas HH:mm*/ 
     if (horaFormatada instanceof Date) {
       horaFormatada = Utilities.formatDate(horaFormatada, fusoHorario, "HH:mm");
     }
@@ -651,15 +708,15 @@ function lerTarefas() {
       tipoRepeticao: l[2],
       data: dataFormatada,
       hora: horaFormatada,
-      responsavel: l[6] // Ajustado para o índice correto da sua coluna de Responsável
+      responsavel: l[5]
     };
   });
 }
 
-/** BUSCA UMA TAREFA ISOLADA PARA EDIÇÃO  */
 function buscarUnicaTarefa(data) {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const sheet = ss.getSheetByName("tasks");
+  if (!sheet) return null;
   const dados = sheet.getDataRange().getValues();
   
   const fusoHorario = Session.getScriptTimeZone();
@@ -678,7 +735,6 @@ function buscarUnicaTarefa(data) {
       let comandoParte = "";
       let descParte = textoCel;
       
-      // Desempacota as 3 variáveis salvas na célula da task de forma segura
       if(textoCel.includes(" // ")) {
         let partesTexto = textoCel.split(" // ");
         if(partesTexto.length >= 3) {
@@ -703,28 +759,27 @@ function buscarUnicaTarefa(data) {
       };
     }
   }
+  return null;
 }
-
-/**FUNÇÃO PARA DELETAR TAREFAS PELO ID */
 
 function deletarTarefa(data) {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const sheet = ss.getSheetByName("tasks");
+  if (!sheet) return { status: "erro", mensagem: "Aba tasks não encontrada." };
+
+  const idProcurado = Number(data.idTarefa);
   const dados = sheet.getDataRange().getValues();
   for (let i = 1; i < dados.length; i++) {
-    if (Number(dados[i][0]) === Number(data.idTarefa)) {
+    if (Number(dados[i][0]) === idProcurado) {
       sheet.deleteRow(i + 1);
-      return "Tarefa removida com sucesso.";
+      return { status: "sucesso", mensagem: "Tarefa removida com sucesso.", id: idProcurado };
     }
   }
-  return "Erro ao remover tarefa.";
+  return { status: "erro", mensagem: "Erro ao remover tarefa." };
 }
 
-
-/** FUNÇÃO DE PROCESSAMENTO AUTOMÁTICO */
-
-/*function verificarEGerarChamadosAutomaticos() {
-  const ss = SpreadsheetApp.openById("");
+function verificarEGerarChamadosAutomaticos() {
+  const ss = getAppSpreadsheet();
   const taskSheet = ss.getSheetByName("tasks");
   const mainSheet = ss.getSheetByName("main");
   const userSheet = ss.getSheetByName("users");
@@ -732,127 +787,18 @@ function deletarTarefa(data) {
   if (!taskSheet || !mainSheet) return;
   
   const tarefas = taskSheet.getDataRange().getValues();
+  if (tarefas.length <= 1) return;
   tarefas.shift();
   
-  const dadosUsuarios = userSheet ? userSheet.getDataRange().getValues() : [];
-  const mapeamentoFuncoes = {};
-  for (let i = 1; i < dadosUsuarios.length; i++) {
-    let nomeCompleto = (String(dadosUsuarios[i][1]).trim() + " " + String(dadosUsuarios[i][2]).trim()).trim();
-    mapeamentoFuncoes[nomeCompleto] = dadosUsuarios[i][3] ? String(dadosUsuarios[i][3]).trim() : "Geral";
-  }
-  
-  const agora = new Date();
-  const fusoHorario = Session.getScriptTimeZone();
-  const horaAtualStr = Utilities.formatDate(agora, fusoHorario, "HH:mm");
-  const dataAtualStr = Utilities.formatDate(agora, fusoHorario, "dd/MM/yyyy");
-  
-  const [hAtual, mAtual] = horaAtualStr.split(":").map(Number);
-  
-  tarefas.forEach(tarefa => {
-    const id = tarefa[0];
-    let textoCel = String(tarefa[1]);
-    const tipo = tarefa[2];
-    const dataAgendada = tarefa[3];
-    let horaAgendada = tarefa[4];
-    const responsavel = tarefa[5] ? String(tarefa[5]).trim() : "";
-    
-    if (!horaAgendada) return;
-
-    let rotinaNome = "Rotina Agendada";
-    let comandoDiretriz = "Executar padrão";
-    let descricaoReal = textoCel;
-
-    // Quebra as 3 strings unidas da automação
-    if(textoCel.includes(" // ")) {
-      let partes = textoCel.split(" // ");
-      if(partes.length >= 3) {
-        rotinaNome = partes[0];
-        comandoDiretriz = partes[1];
-        descricaoReal = partes[2];
-      } else {
-        rotinaNome = partes[0];
-        descricaoReal = partes[1];
-      }
-    }
-
-    if (horaAgendada instanceof Date) { horaAgendada = Utilities.formatDate(horaAgendada, fusoHorario, "HH:mm"); } 
-    else { horaAgendada = String(horaAgendada).trim(); }
-    
-    if (!horaAgendada.includes(":")) return;
-    
-    const [hTask, mTask] = horaAgendada.split(":").map(Number);
-    
-    if (hAtual === hTask && Math.abs(mAtual - mTask) <= 16) {
-      let precisaCriar = false;
-      let dataAgendadaStr = dataAgendada;
-      if (dataAgendadaStr instanceof Date) { dataAgendadaStr = Utilities.formatDate(dataAgendadaStr, fusoHorario, "dd/MM/yyyy"); } 
-      else { dataAgendadaStr = String(dataAgendadaStr).trim(); }
-      
-      if (tipo === "Diaria") { precisaCriar = true; } 
-      else if (tipo === "Mensal" && dataAgendadaStr === dataAtualStr) { precisaCriar = true; }
-      
-      if (precisaCriar) {
-        const chamadosHoje = mainSheet.getDataRange().getValues();
-        const jaExiste = chamadosHoje.some(c => c[1] === "Rotina do setor" && c[5] === descricaoReal && c[8] === dataAtualStr);
-        
-        if (!jaExiste) {
-          const ultimaLinha = mainSheet.getLastRow();
-          let maiorId = 0;
-          if (ultimaLinha > 1) {
-            const ids = mainSheet.getRange(2, 1, ultimaLinha - 1).getValues().flat();
-            maiorId = Math.max(...ids.map(Number));
-          }
-          
-          const funcaoRealDoResponsavel = mapeamentoFuncoes[responsavel] || "Geral";
-          
-          let partesResp = responsavel.split(" ");
-          let responsavelCurto = partesResp[0] + (partesResp[1] ? " " + partesResp[1] : "");
-
-          // Insere a linha completa com as novas colunas J e K preenchidas pelo Relógio do Google
-          mainSheet.appendRow([
-            maiorId + 1,
-            "Rotina do setor",
-            responsavelCurto,
-            funcaoRealDoResponsavel,
-            "Pendente", 
-            descricaoReal,
-            rotinaNome, 
-            horaAgendada + ":00",
-            dataAtualStr,
-            tipo,             
-            comandoDiretriz   
-          ]);
-        }
-      }
-    }
-  });
-}*/
-
-/** FUNÇÃO DE PROCESSAMENTO AUTOMÁTICO (CORRIGIDA) */
-function verificarEGerarChamadosAutomaticos() {
-  const ss = SpreadsheetApp.openById("");
-  const taskSheet = ss.getSheetByName("tasks");
-  const mainSheet = ss.getSheetByName("main");
-  const userSheet = ss.getSheetByName("users");
-  
-  if (!taskSheet || !mainSheet) return;
-  
-  const tarefas = taskSheet.getDataRange().getValues();
-  if (tarefas.length <= 1) return; // Se só tiver cabeçalho, encerra
-  tarefas.shift(); // Remove cabeçalho
-  
-  // Utiliza o fuso horário exato da planilha
   const fusoHorario = ss.getSpreadsheetTimeZone();
   const agora = new Date();
   
   const horaAtualStr = Utilities.formatDate(agora, fusoHorario, "HH:mm");
   const dataAtualStr = Utilities.formatDate(agora, fusoHorario, "dd/MM/yyyy");
   
-  // Converte o horário atual em minutos totais do dia
   const [hAtual, mAtual] = horaAtualStr.split(":").map(Number);
   const minutosAtuaisTotais = hAtual * 60 + mAtual;
 
-  // Mapeia funções dos usuários
   const dadosUsuarios = userSheet ? userSheet.getDataRange().getValues() : [];
   const mapeamentoFuncoes = {};
   for (let i = 1; i < dadosUsuarios.length; i++) {
@@ -860,7 +806,6 @@ function verificarEGerarChamadosAutomaticos() {
     mapeamentoFuncoes[nomeCompleto] = dadosUsuarios[i][3] ? String(dadosUsuarios[i][3]).trim() : "Geral";
   }
 
-  // Lê todos os chamados existentes na aba main para validação de duplicidade
   const chamadosMain = mainSheet.getDataRange().getValues();
 
   tarefas.forEach(tarefa => {
@@ -876,7 +821,6 @@ function verificarEGerarChamadosAutomaticos() {
     let comandoDiretriz = "Executar padrão";
     let descricaoReal = textoCel;
 
-    // Quebra as 3 strings unidas da automação
     if (textoCel.includes(" // ")) {
       let partes = textoCel.split(" // ");
       if (partes.length >= 3) {
@@ -889,7 +833,6 @@ function verificarEGerarChamadosAutomaticos() {
       }
     }
 
-    // Formata o horário da tarefa para HH:mm
     if (horaAgendada instanceof Date) { 
       horaAgendada = Utilities.formatDate(horaAgendada, fusoHorario, "HH:mm"); 
     } else { 
@@ -901,10 +844,8 @@ function verificarEGerarChamadosAutomaticos() {
     const [hTask, mTask] = horaAgendada.split(":").map(Number);
     const minutosTaskTotais = hTask * 60 + mTask;
     
-    // Calcula a diferença real em minutos considerando viradas de hora
     const diferencaMinutos = Math.abs(minutosAtuaisTotais - minutosTaskTotais);
 
-    // Aceita se estiver dentro da janela de até 15 minutos do horário agendado
     if (diferencaMinutos <= 15) {
       let precisaCriar = false;
       
@@ -922,7 +863,6 @@ function verificarEGerarChamadosAutomaticos() {
       }
       
       if (precisaCriar) {
-        // Verifica se o chamado já foi criado hoje na aba main
         const jaExiste = chamadosMain.some(c => {
           let tipoChamado = String(c[1] || "").trim();
           let descChamado = String(c[5] || "").trim();
@@ -950,7 +890,6 @@ function verificarEGerarChamadosAutomaticos() {
           let partesResp = responsavel.split(" ");
           let responsavelCurto = partesResp[0] + (partesResp[1] ? " " + partesResp[1] : "");
 
-          // Insere o novo chamado formatado
           mainSheet.appendRow([
             maiorId + 1,
             "Rotina do setor",
@@ -970,10 +909,8 @@ function verificarEGerarChamadosAutomaticos() {
   });
 }
 
-/** FUNÇÃO DE CONSULTA DE ROTINAS */
-
 function consultarStatusRotina(data) {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const main = ss.getSheetByName("main");
   if (!main) return { encontrado: false };
 
@@ -1019,7 +956,7 @@ function consultarStatusRotina(data) {
       encontrado: true,
       nomeRotina: data.nomeRotina,
       data: dataRotina,
-      solicitante: listaOperadores.join(" / "), // Exibe múltiplos operadores se houver
+      solicitante: listaOperadores.join(" / "),
       operadores: listaOperadores,
       statusGeral: temPendente ? "Pendente" : "Concluído",
       tarefas: tarefasDaRotina
@@ -1029,10 +966,8 @@ function consultarStatusRotina(data) {
   return { encontrado: false };
 }
 
-/**  FUNÇÃO QUE CONSULTA HISTORICO DE ROTINAS*/
-
 function consultarHistoricoRotinas(data) {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   const main = ss.getSheetByName("main");
   if (!main) return { historico: [] };
 
@@ -1077,7 +1012,6 @@ function consultarHistoricoRotinas(data) {
     }
   }
 
-  // Se for uma busca por data específica
   if (dataBusca) {
     const item = agrupadoPorData[dataBusca];
     if (item) {
@@ -1098,7 +1032,6 @@ function consultarHistoricoRotinas(data) {
     }
   }
 
-  // Retorna as 5 últimas rotinas anteriores a hoje (ordenadas por data decrescente)
   const datasOrdenadas = Object.keys(agrupadoPorData)
     .filter(d => d !== hojeStr)
     .sort((a, b) => {
@@ -1128,7 +1061,7 @@ function consultarHistoricoRotinas(data) {
 const equipamentos = "equipamentos";
 
 function obterAbaEquipamentos() {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   let aba = ss.getSheetByName("equipamentos");
   if (!aba) {
     aba = ss.insertSheet(equipamentos);
@@ -1142,19 +1075,27 @@ function obterEquipamentos(data) {
   const dados = aba.getDataRange().getValues();
   if (dados.length <= 1) return [];
 
+  const fuso = "GMT-3";
   const resultado = [];
   for (let i = 1; i < dados.length; i++) {
     const row = dados[i];
+    let dataAddStr = row[7];
+    if (dataAddStr instanceof Date) {
+      dataAddStr = Utilities.formatDate(dataAddStr, fuso, "dd/MM/yyyy");
+    } else {
+      dataAddStr = String(dataAddStr || "").trim();
+    }
+
     resultado.push({
       id: row[0],
-      numero: String(row[1]),
-      nome: String(row[2]),
-      modelo: String(row[3]),
-      tipo: String(row[4]),
-      local: String(row[5]),
-      status: String(row[6]),
-      dataAdd: row[7] ? Utilities.formatDate(new Date(row[7]), "GMT-3", "dd/MM/yyyy") : "",
-      obs: String(row[8])
+      numero: String(row[1] || ""),
+      nome: String(row[2] || ""),
+      modelo: String(row[3] || ""),
+      tipo: String(row[4] || ""),
+      local: String(row[5] || ""),
+      status: String(row[6] || ""),
+      dataAdd: dataAddStr,
+      obs: String(row[8] || "")
     });
   }
   return resultado;
@@ -1185,48 +1126,54 @@ function salvarEquipamento(data) {
     data.obs || ""
   ]);
 
-  return { status: "sucesso", mensagem: "Equipamento cadastrado com sucesso!" };
+  return { status: "sucesso", mensagem: "Equipamento cadastrado com sucesso!", id: novoId, dataAdd: dataHoje };
 }
 
 function atualizarEquipamento(data) {
   const aba = obterAbaEquipamentos();
   const valores = aba.getDataRange().getValues();
+  const targetId = Number(data.id);
 
   for (let i = 1; i < valores.length; i++) {
-    if (Number(valores[i][0]) === Number(data.id)) {
+    if (Number(valores[i][0]) === targetId) {
       const linha = i + 1;
-      aba.getRange(linha, 2).setValue(data.numero);
-      aba.getRange(linha, 3).setValue(data.nome);
-      aba.getRange(linha, 4).setValue(data.modelo);
-      aba.getRange(linha, 5).setValue(data.tipo);
-      aba.getRange(linha, 6).setValue(data.local);
-      aba.getRange(linha, 7).setValue(data.status);
-      aba.getRange(linha, 9).setValue(data.obs || "");
+      const dataAddOriginal = valores[i][7];
+      aba.getRange(linha, 1, 1, 9).setValues([[
+        targetId,
+        data.numero,
+        data.nome,
+        data.modelo,
+        data.tipo,
+        data.local,
+        data.status,
+        dataAddOriginal,
+        data.obs || ""
+      ]]);
       break;
     }
   }
-  return { status: "sucesso", mensagem: "Equipamento atualizado com sucesso!" };
+  return { status: "sucesso", mensagem: "Equipamento atualizado com sucesso!", id: targetId };
 }
 
 function deletarEquipamento(data) {
   const aba = obterAbaEquipamentos();
   const valores = aba.getDataRange().getValues();
+  const targetId = Number(data.id);
 
   for (let i = 1; i < valores.length; i++) {
-    if (Number(valores[i][0]) === Number(data.id)) {
+    if (Number(valores[i][0]) === targetId) {
       aba.deleteRow(i + 1);
       break;
     }
   }
-  return { status: "sucesso", mensagem: "Equipamento deletado com sucesso!" };
+  return { status: "sucesso", mensagem: "Equipamento deletado com sucesso!", id: targetId };
 }
-
 
 const intenspedidos = "pedidosRefeitorio";
 const emailcliente = "pedrosimaocontato@gmail.com";
 
 function obterAbaNfe() {
-  const ss = SpreadsheetApp.openById("");
+  const ss = getAppSpreadsheet();
   let aba = ss.getSheetByName("pedidosRefeitorio");
   if (!aba) {
     aba = ss.insertSheet("pedidosRefeitorio");
@@ -1244,7 +1191,6 @@ function processarPedidoNfe(data) {
     const aba = obterAbaNfe();
     const ultLinha = aba.getLastRow();
     
-    // 1. GERADOR DE ID 100% NUMÉRICO SEQUENCIAL
     let idPedidoNum = 1;
     if (ultLinha > 1) {
       const idsExistentes = aba.getRange(2, 1, ultLinha - 1, 1).getValues();
@@ -1259,7 +1205,6 @@ function processarPedidoNfe(data) {
                         ? data.solicitante 
                         : "Usuário Não Identificado";
 
-    // 2. MONTA AS LINHAS PARA GRAVAÇÃO NA PLANILHA
     let linhasParaInserir = [];
     let tabelaHtmlItens = "";
 
@@ -1281,10 +1226,8 @@ function processarPedidoNfe(data) {
         </tr>`;
     });
 
-    // Inserção em lote na planilha
     aba.getRange(ultLinha + 1, 1, linhasParaInserir.length, 6).setValues(linhasParaInserir);
 
-    // 3. ENVIO DO E-MAIL VIA MAILAPP (Evita erro de permissão do Web App)
     const assuntoEmail = `[Portal S.I] Solicitação de NFe Pedido #${idPedidoNum} - Solicitante: ${solicitante}`;
     
     const corpoHtml = `

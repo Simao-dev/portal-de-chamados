@@ -4,80 +4,102 @@
   let funcaoUsuarioLogado = "";
   let nivelUsuarioLogado = "";
 
-  /**FUNÇÃO DE AUTENTICAÇÃO E LOGIN */
+  /** CACHE GLOBAL EM MEMÓRIA DE TODAS AS ENTIDADES DO SISTEMA (OPTIMISTIC UI) */
+  let listaChamadosGlobal = [];
+  let listaUsuariosGlobal = [];
+  let listaTarefasGlobal = [];
+  let listaEquipamentosGlobal = [];
+
+  /** FUNÇÃO DE AUTENTICAÇÃO E LOGIN */
 
   function entrar() {
-  var mat = document.getElementById("matricula").value;
-  var sen = document.getElementById("senha").value;
-  var msg = document.getElementById("mensagem");
+    var elemMat = document.getElementById("matricula");
+    var elemSen = document.getElementById("senha");
+    var msg = document.getElementById("mensagem");
 
-  if (!mat || !sen) {
-    if (msg) msg.innerText = "Preencha todos os campos.";
-    return;
+    var mat = elemMat ? elemMat.value : "";
+    var sen = elemSen ? elemSen.value : "";
+
+    if (!mat || !sen) {
+      if (msg) msg.innerText = "Preencha todos os campos.";
+      return;
+    }
+
+    if (msg) msg.innerText = "Autenticando...";
+
+    if (typeof google === "undefined" || !google.script || !google.script.run) {
+      if (msg) msg.innerText = "Erro: Conexão com o Google Apps Script não disponível.";
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(function(respostaPerfil) {
+        if (respostaPerfil && respostaPerfil.nivel) {
+          if (msg) msg.innerText = "Login aprovado! Carregando sistema...";
+          
+          nivelUsuarioLogado = String(respostaPerfil.nivel).toLowerCase().trim();
+          nomeUsuarioLogado = respostaPerfil.nomeCompleto || "Usuário";
+          funcaoUsuarioLogado = respostaPerfil.funcao || "Geral";
+          
+          google.script.run
+            .withSuccessHandler(function(htmlSistema) {
+              if (htmlSistema) {
+                document.body.innerHTML = htmlSistema;
+              }
+              
+              setTimeout(function() {
+                try {
+                  if (document.getElementById("ncUsuarioLogado")) {
+                    document.getElementById("ncUsuarioLogado").value = nomeUsuarioLogado;
+                  }
+                } catch(e) { console.error("Erro ao preencher usuario logado:", e); }
+
+                try { configurarPermissoes(nivelUsuarioLogado); } catch(e) { console.error("Erro Permissoes:", e); }
+                try { configurarNavegacao(); } catch(e) { console.error("Erro Navegacao:", e); }
+                
+                try { lerDadosDaTabela(); } catch(e) { console.error("Erro Tabela Geral:", e); }
+                try { lerDadosDosUsuarios(); } catch(e) { console.error("Erro Tabela Users:", e); }
+                try { preencherSelectSolicitante(); } catch(e) { console.error("Erro Select Solicitantes:", e); }
+                try { inicializaPainel(); } catch(e) { console.error("Erro Painel Metricas:", e); }
+                try { carregarEquipamentos(); } catch(e) { console.error("Erro Equipamentos:", e); }
+                try { lerDadosDasTarefas(); } catch(e) { console.error("Erro Módulo Tarefas:", e); }
+                
+                setInterval(function() {
+                  try { atualizarBadgeNotificacao(); } catch(e) {}
+                }, 10000);
+              }, 150);
+            })
+            .withFailureHandler(function(erroHtml) {
+              if (msg) msg.innerText = "Erro ao carregar tela do sistema: " + (erroHtml ? erroHtml.message : "Erro desconhecido");
+            })
+            .carregarPaginaSistema();
+            
+        } else {
+          if (msg) msg.innerText = "Usuário ou senha inválidos.";
+        }
+      })
+      .withFailureHandler(function(erro) {
+        if (msg) msg.innerText = "Erro no servidor: " + (erro ? erro.message : "Resposta indefinida");
+      })
+      .roteadorChamado({
+        qualFuncao: "autenticarUsuario", 
+        matricula: mat, 
+        senha: sen
+      });
   }
 
-  if (msg) msg.innerText = "Autenticando...";
+  window.entrar = entrar;
 
-  google.script.run
-    .withSuccessHandler(function(respostaPerfil) {
-
-      /** Trata o retorno como objeto estruturado conforme o post.gs devolve */
-      if (respostaPerfil && respostaPerfil.nivel) {
-        if (msg) msg.innerText = "Login aprovado! Carregando sistema...";
-        
-        nivelUsuarioLogado = String(respostaPerfil.nivel).toLowerCase().trim();
-        nomeUsuarioLogado = respostaPerfil.nomeCompleto;
-        funcaoUsuarioLogado = respostaPerfil.funcao;
-        
-        google.script.run
-          .withSuccessHandler(function(htmlSistema) {
-            document.body.innerHTML = htmlSistema;
-            
-            /** Executa a inicialização de forma segura isolando os blocos por try/catch */ 
-            setTimeout(function() {
-              // Preenche o campo oculto do usuário assim que a tela é injetada no DOM
-              try {
-                if (document.getElementById("ncUsuarioLogado")) {
-                  document.getElementById("ncUsuarioLogado").value = nomeUsuarioLogado;
-                }
-              } catch(e) { console.error("Erro ao preencher usuario logado:", e); }
-
-              try { configurarPermissoes(nivelUsuarioLogado); } catch(e) { console.error("Erro Permissoes:", e); }
-              try { configurarNavegacao(); } catch(e) { console.error("Erro Navegacao:", e); }
-              
-              /** Inicializações de tabelas puros com base nas permissões de escopo */ 
-              try { lerDadosDaTabela(); } catch(e) { console.error("Erro Tabela Geral:", e); }
-              try { lerDadosDosUsuarios(); } catch(e) { console.error("Erro Tabela Users:", e); }
-              try { preencherSelectSolicitante(); } catch(e) { console.error("Erro Select Solicitantes:", e); }
-              try { inicializaPainel(); } catch(e) { console.error("Erro Painel Metricas:", e); }
-              try { atualizarBadgeNotificacao(); } catch(e) { console.error("Erro Badge:", e); }
-              try { lerDadosDasTarefas(); } catch(e) { console.error("Erro Módulo Tarefas:", e); }
-              
-              /** INCLUSÃO DA ABA DE CHAMADOS (PORTAL DO CLIENTE) */
-              try { lerChamadosDoClienteLogado(); } catch(e) { console.error("Erro Histórico Cliente:", e); }
-              
-              setInterval(function() {
-                try { atualizarBadgeNotificacao(); } catch(e) {}
-              }, 10000);
-            }, 150);
-          })
-          .carregarPaginaSistema();
-          
-      } else {
-        if (msg) msg.innerText = "Usuário ou senha inválidos.";
+  if (typeof document !== "undefined") {
+    document.addEventListener("DOMContentLoaded", function() {
+      var btnLogin = document.querySelector(".btn-login");
+      if (btnLogin) {
+        btnLogin.onclick = entrar;
       }
-    })
-    .withFailureHandler(function(erro) {
-      if (msg) msg.innerText = "Erro: " + erro.message;
-    })
-    .roteadorChamado({
-      qualFuncao: "autenticarUsuario", 
-      matricula: mat, 
-      senha: sen
     });
-}
+  }
 
-  /** NAVEGAÇÃO ENTRE MENUS - DIRECIONAMENTO EXCLUSIVO BASEADO NA PERMISSÃO */ 
+  /** NAVEGAÇÃO ENTRE MENUS */ 
   function configurarNavegacao() {
     const botoes = document.querySelectorAll(".menu-navegação");
     const telasFuncoes = document.querySelectorAll(".form-area");
@@ -99,7 +121,6 @@
       });
     });
 
-    /**  Redirecionamento forçado de inicialização se for cliente */
     let alvoPadrao = 'metricas';
     if (nivelUsuarioLogado === 'cliente') {
       alvoPadrao = 'chamados';
@@ -121,15 +142,15 @@
     }
   }
 
-  /** FUNÇÃO DE HISTÓRICO E REQUISIÇÃO (PORTAL DO CLIENTE)*/
+  window.configurarNavegacao = configurarNavegacao;
 
+  /** FUNÇÕES DE GERENCIAMENTO DE CHAMADOS E PORTAL DO CLIENTE (OPTIMISTIC UI) */
 
   function abrirModalNovoChamado() {
     try {
       const form = document.getElementById("formNovoChamado"); 
       if (form) form.reset();
       
-      /**  Localiza o campo de texto do modal e injeta o nome de quem está logado */
       const inputNome = document.getElementById("ncUsuarioLogado");
       if (inputNome) {
         inputNome.value = nomeUsuarioLogado || "Usuário Conectado";
@@ -145,7 +166,8 @@
     }
   }
 
-  /** FUNÇÃO PARA SALVAR O CHAMADO VINDO DO PORTAL */
+  window.abrirModalNovoChamado = abrirModalNovoChamado;
+
   function salvarNovoChamado() {
     const descricaoText = document.getElementById("ncDescricao").value.trim();
     if (!descricaoText) { 
@@ -153,9 +175,30 @@
       return; 
     }
     
-    mostrarLoading();
+    const agora = new Date();
+    const horaStr = agora.toLocaleTimeString('pt-BR');
+    const dataStr = agora.toLocaleDateString('pt-BR');
     
-    /** Monta o objeto estruturado respeitando as colunas da aba 'main' */ 
+    const novoChamadoTemp = {
+      id: "...",
+      tipoDoChamado: "Requisição",
+      solicitante: nomeUsuarioLogado,
+      funcao: funcaoUsuarioLogado,
+      statusChamado: "Pendente",
+      descricao: descricaoText,
+      informacaoExtra: "chamado aberto via portal",
+      hora: horaStr,
+      data: dataStr
+    };
+
+    listaChamadosGlobal.unshift(novoChamadoTemp);
+    preencherTabelaNativaChamados(listaChamadosGlobal);
+    lerChamadosDoClienteLogado();
+    atualizarBadgeNotificacao();
+
+    fecharModalNovoChamado(); 
+    mostrarAlerta("Sucesso: Seu chamado foi registrado e enviado para análise técnica.");
+
     const dados = {
       qualFuncao: "entradaDeInformacoes", 
       idDoChamado: "", 
@@ -169,23 +212,21 @@
 
     google.script.run
       .withSuccessHandler(function(resposta) { 
-        esconderLoading(); 
-        fecharModalNovoChamado(); 
-        mostrarAlerta("Sucesso: Seu chamado foi registrado e enviado para análise técnica."); 
-        
-        /** Atualiza os seletores de forma segura */ 
-        try { lerDadosDaTabela(); } catch(e){} 
-        try { atualizarBadgeNotificacao(); } catch(e){} 
-        try { lerChamadosDoClienteLogado(); } catch(e){} 
+        if (resposta && resposta.status === "sucesso") {
+          novoChamadoTemp.id = resposta.id;
+          if (resposta.hora) novoChamadoTemp.hora = resposta.hora;
+          if (resposta.data) novoChamadoTemp.data = resposta.data;
+        }
+        preencherTabelaNativaChamados(listaChamadosGlobal);
+        lerChamadosDoClienteLogado();
       })
       .withFailureHandler(function(err) { 
-        esconderLoading(); 
-        mostrarAlerta("Erro ao registrar chamado: " + err.message); 
+        mostrarAlerta("Aviso: Houve um erro ao sincronizar com o servidor: " + err.message); 
       })
       .roteadorChamado(dados);
   }
 
-  /** FUNÇÃO FECHA MODAL NOVO CHAMADO CLIENTE */
+  window.salvarNovoChamado = salvarNovoChamado;
 
   function fecharModalNovoChamado() {
     try {
@@ -199,31 +240,23 @@
     }
   }
 
-  /** FUNÇÃO QUE LÊ E FILTRA OS CHAMADOS EXCLUSIVOS DO CLIENTE LOGADO */ 
+  window.fecharModalNovoChamado = fecharModalNovoChamado;
+
   function lerChamadosDoClienteLogado() {
     const tbody = document.getElementById("tabela-chamados-cliente-body"); 
     if (!tbody) return; 
 
+    if (listaChamadosGlobal.length > 0) {
+      filtrarERenderizarCliente();
+      return;
+    }
+
     google.script.run
       .withSuccessHandler(function(todosOsChamados) {
-        if (!Array.isArray(todosOsChamados)) return;
-        
-        /** Compara o solicitante da planilha com o nome do usuário logado na sessão */ 
-        const chamadosFiltrados = todosOsChamados.filter(function(chamado) {
-          let solicitanteChamado = chamado.solicitante ? String(chamado.solicitante).trim().toLowerCase() : "";
-          let usuarioLogadoLimpo = nomeUsuarioLogado ? String(nomeUsuarioLogado).trim().toLowerCase() : "";
-          return solicitanteChamado === usuarioLogadoLimpo;
-        });
-
-        /**Deixa os chamados "Pendentes" no topo, e os mais recentes primeiro */ 
-        chamadosFiltrados.sort((a, b) => {
-          if (a.statusChamado === "Pendente" && b.statusChamado !== "Pendente") return -1;
-          if (a.statusChamado !== "Pendente" && b.statusChamado === "Pendente") return 1;
-          return Number(b.id) - Number(a.id);
-        });
-
-        /** Envia os dados filtrados e organizados para construir as linhas na tela */
-        preencherTabelaCliente(chamadosFiltrados);
+        if (Array.isArray(todosOsChamados)) {
+          listaChamadosGlobal = todosOsChamados;
+        }
+        filtrarERenderizarCliente();
       })
       .withFailureHandler(function(err) {
         console.error("Erro ao puxar registros do cliente:", err);
@@ -231,13 +264,30 @@
       .roteadorChamado({ qualFuncao: "lerChamados" });
   }
 
-  /** FUNÇÃO AUXILIAR QUE RENDERIZA AS LINHAS DO CLIENTE COM OS ESTILOS DO SISTEMA */
+  window.lerChamadosDoClienteLogado = lerChamadosDoClienteLogado;
+
+  function filtrarERenderizarCliente() {
+    const chamadosFiltrados = listaChamadosGlobal.filter(function(chamado) {
+      let solicitanteChamado = chamado.solicitante ? String(chamado.solicitante).trim().toLowerCase() : "";
+      let usuarioLogadoLimpo = nomeUsuarioLogado ? String(nomeUsuarioLogado).trim().toLowerCase() : "";
+      return solicitanteChamado === usuarioLogadoLimpo;
+    });
+
+    chamadosFiltrados.sort((a, b) => {
+      if (a.statusChamado === "Pendente" && b.statusChamado !== "Pendente") return -1;
+      if (a.statusChamado !== "Pendente" && b.statusChamado === "Pendente") return 1;
+      return Number(b.id) - Number(a.id);
+    });
+
+    preencherTabelaCliente(chamadosFiltrados);
+  }
+
   function preencherTabelaCliente(dados) {
     const tbody = document.getElementById("tabela-chamados-cliente-body"); 
     if (!tbody) return;
     tbody.innerHTML = "";
 
-    if (dados.length === 0) { 
+    if (!Array.isArray(dados) || dados.length === 0) { 
       tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color:var(--text-color-faded);">Você ainda não possui nenhum chamado registrado.</td></tr>`; 
       return; 
     }
@@ -265,47 +315,41 @@
     });
   }
 
-  /** RESTRICAO TOTAL DE ACESSO DO PORTAL DO CLIENTE */ 
-function configurarPermissoes(nivel) {
-  const botoesMenu = document.querySelectorAll(".menu-navegação");
-  const areasConteudo = document.querySelectorAll(".form-area");
-  const nivelAcesso = String(nivel).toLowerCase().trim();
+  function configurarPermissoes(nivel) {
+    const botoesMenu = document.querySelectorAll(".menu-navegação");
+    const areasConteudo = document.querySelectorAll(".form-area");
+    const nivelAcesso = String(nivel).toLowerCase().trim();
 
-  // Libera a exibição inicial de todos os botões do menu
-  botoesMenu.forEach(btn => btn.style.display = '');
+    botoesMenu.forEach(btn => btn.style.display = '');
 
-  if (nivelAcesso === 'cliente') {
-    /** 
-     * Oculta botões restritos do painel lateral.
-     * Permite apenas 'chamados' e 'coleta-nfe-aba'.
-     */ 
-    botoesMenu.forEach(btn => {
-      const alvo = btn.dataset.alvo;
-      if (alvo !== 'chamados' && alvo !== 'coleta-nfe-aba') {
-        btn.style.setProperty('display', 'none', 'important');
-      }
-    });
+    if (nivelAcesso === 'cliente') {
+      botoesMenu.forEach(btn => {
+        const alvo = btn.dataset.alvo;
+        if (alvo !== 'chamados' && alvo !== 'coleta-nfe-aba') {
+          btn.style.setProperty('display', 'none', 'important');
+        }
+      });
 
-    /** 
-     * Remove o foco visual de abas administrativas restritas ativas em background.
-     * Preserva as abas liberadas para o cliente ('chamados' e 'coleta-nfe-aba').
-     */ 
-    areasConteudo.forEach(aba => {
-      if (aba.id !== 'chamados' && aba.id !== 'coleta-nfe-aba') {
-        aba.classList.remove("conteudo-ativo");
-      }
-    });
+      areasConteudo.forEach(aba => {
+        if (aba.id !== 'chamados' && aba.id !== 'coleta-nfe-aba') {
+          aba.classList.remove("conteudo-ativo");
+        }
+      });
+    }
+
+    if (document.getElementById('displayNivel')) {
+      document.getElementById('displayNivel').innerText = nivelAcesso.toUpperCase();
+    }
   }
 
-  if (document.getElementById('displayNivel')) {
-    document.getElementById('displayNivel').innerText = nivelAcesso.toUpperCase();
-  }
-}
-  /**FUNÇÃO RESPOSAVEL POR FAZER O LOGOUT DO USUARIO */
+  window.configurarPermissoes = configurarPermissoes;
+
   function fazerLogout() {
     var url = 'https://script.google.com/macros/s/AKfycbyEP_J2lPoXHFiCwMefE3vYA213dPv7kmkmh33SErR8Ahss4346sb3ZDARNOaxFcX_4Qw/exec';
     window.top.location.href = url;
   }
+
+  window.fazerLogout = fazerLogout;
 
   /** MÓDULO DE MÉTRICAS */
   function inicializaPainel() {
@@ -336,7 +380,8 @@ function configurarPermissoes(nivel) {
     google.script.run.withSuccessHandler(exibeMetricas).roteadorChamado(dados);
   }
 
-  /** FUNÇÃO QUE ATUALIZA METRICAS DO PAINEL DE METRICAS */
+  window.inicializaPainel = inicializaPainel;
+
   function exibeMetricas(resposta) {
     if (resposta && resposta.status === "erro") {
       mostrarAlerta(resposta.mensagem);
@@ -399,14 +444,12 @@ function configurarPermissoes(nivel) {
     }
   }
 
-  /** FUNÇÃO QUE FORMATA A DATA PRA EXIBIÇÃO */
   function formataDataParaExibicao(dataString) {
     if(!dataString || !dataString.includes("-")) return "---";
     const partes = dataString.split("-");
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
   }
 
-  /** FUNÇÃO ENVIA DATAS */
   function enviaDatas() {
     const dataInicialInput = document.getElementById("data-inicial").value;
     if (!dataInicialInput) { mostrarAlerta("Por favor, selecione um intervalo de datas."); return; }
@@ -421,6 +464,8 @@ function configurarPermissoes(nivel) {
         .withSuccessHandler(function(resposta) { esconderLoading(); exibeMetricas(resposta); }) 
         .roteadorChamado({ qualFuncao: "metricas", dataInicial: dataInicialFormatada, dataFinal: dataFinalFormatada });
   }
+
+  window.enviaDatas = enviaDatas;
 
   function converteData(dataValor) {
     const partes = dataValor.trim().split("/");
@@ -437,6 +482,12 @@ function configurarPermissoes(nivel) {
       return;
     }
     
+    const chamadoLocal = listaChamadosGlobal.find(c => String(c.id).trim() === idBusca);
+    if (chamadoLocal) {
+      preencherFormularioPesquisa(chamadoLocal);
+      return;
+    }
+
     mostrarLoading();
     
     google.script.run
@@ -449,60 +500,7 @@ function configurarPermissoes(nivel) {
           return;
         }
         
-        /** Alimenta os campos mapeando a nova disposição da tela */ 
-        document.getElementById('editIdChamado').value = resposta.id || "";
-        document.getElementById('editTipoChamado').value = resposta.tipoDoChamado || "";
-        document.getElementById('editStatusChamado').value = resposta.statusChamado || "";
-        document.getElementById('editFuncaoChamado').value = resposta.funcao || "";
-        document.getElementById('editDataChamado').value = resposta.data || "";
-        document.getElementById('editHoraChamado').value = resposta.hora || "";
-        document.getElementById('editDescricao').value = resposta.descricao || "";
-        
-        // Informação extra inserida no input pequeno de cima
-        document.getElementById('editInformacaoExtra').value = resposta.informacaoExtra || "---";
-        
-        // Novos campos das colunas J e K
-        document.getElementById('editRepeticaoChamado').value = resposta.tipoRepeticao || "---";
-        document.getElementById('editComandoChamado').value = resposta.comando || "";
-        
-        /** Reconstrói a chave combinada para o seletor de Solicitante */
-        let solicitanteLimpo = resposta.solicitante ? String(resposta.solicitante).trim() : "";
-        let funcaoLimpa = resposta.funcao ? String(resposta.funcao).trim() : "";
-        const selectPesquisa = document.getElementById('editSolicitante');
-        
-        if (selectPesquisa) {
-          if (solicitanteLimpo && funcaoLimpa && !solicitanteLimpo.includes(" - ")) {
-            let valorChave = solicitanteLimpo + ' - ' + funcaoLimpa;
-            selectPesquisa.value = valorChave;
-            
-            if (selectPesquisa.value !== valorChave) {
-              let optNova = document.createElement('option');
-              optNova.value = valorChave; 
-              optNova.textContent = valorChave;
-              selectPesquisa.appendChild(optNova);
-              selectPesquisa.value = valorChave;
-            }
-          } else {
-            selectPesquisa.value = solicitanteLimpo;
-          }
-        }
-        
-        /** CORREÇÃO DOS BLOQUEIOS: Infromação Extra NÃO destrava, Comando Destrava! */
-        const camposParaDestravar = [
-          'editTipoChamado', 
-          'editStatusChamado', 
-          'editSolicitante', 
-          'editDescricao', 
-          'editComandoChamado' // O Textarea grande de comando técnico fica 100% editável
-        ];
-        
-        camposParaDestravar.forEach(idCampo => {
-          const elemento = document.getElementById(idCampo);
-          if (elemento) elemento.disabled = false; 
-        });
-        
-        const formPesquisa = document.querySelector('.id-search-form');
-        if (formPesquisa) formPesquisa.classList.add('form-loaded');
+        preencherFormularioPesquisa(resposta);
       })
       .withFailureHandler(function(erro) {
          esconderLoading();
@@ -515,43 +513,116 @@ function configurarPermissoes(nivel) {
       });
   }
 
-  /** FUNÇÃO QUE ENVIA CHAMADOS EDITADOS */
+  window.pesquisarChamadoPorId = pesquisarChamadoPorId;
+
+  function preencherFormularioPesquisa(resposta) {
+    document.getElementById('editIdChamado').value = resposta.id || "";
+    document.getElementById('editTipoChamado').value = resposta.tipoDoChamado || "";
+    document.getElementById('editStatusChamado').value = resposta.statusChamado || "";
+    document.getElementById('editFuncaoChamado').value = resposta.funcao || "";
+    document.getElementById('editDataChamado').value = resposta.data || "";
+    document.getElementById('editHoraChamado').value = resposta.hora || "";
+    document.getElementById('editDescricao').value = resposta.descricao || "";
+    document.getElementById('editInformacaoExtra').value = resposta.informacaoExtra || "---";
+    document.getElementById('editRepeticaoChamado').value = resposta.tipoRepeticao || "---";
+    document.getElementById('editComandoChamado').value = resposta.comando || "";
+    
+    let solicitanteLimpo = resposta.solicitante ? String(resposta.solicitante).trim() : "";
+    let funcaoLimpa = resposta.funcao ? String(resposta.funcao).trim() : "";
+    const selectPesquisa = document.getElementById('editSolicitante');
+    
+    if (selectPesquisa) {
+      if (solicitanteLimpo && funcaoLimpa && !solicitanteLimpo.includes(" - ")) {
+        let valorChave = solicitanteLimpo + ' - ' + funcaoLimpa;
+        selectPesquisa.value = valorChave;
+        
+        if (selectPesquisa.value !== valorChave) {
+          let optNova = document.createElement('option');
+          optNova.value = valorChave; 
+          optNova.textContent = valorChave;
+          selectPesquisa.appendChild(optNova);
+          selectPesquisa.value = valorChave;
+        }
+      } else {
+        selectPesquisa.value = solicitanteLimpo;
+      }
+    }
+    
+    const camposParaDestravar = [
+      'editTipoChamado', 
+      'editStatusChamado', 
+      'editSolicitante', 
+      'editDescricao', 
+      'editComandoChamado'
+    ];
+    
+    camposParaDestravar.forEach(idCampo => {
+      const elemento = document.getElementById(idCampo);
+      if (elemento) elemento.disabled = false; 
+    });
+    
+    const formPesquisa = document.querySelector('.id-search-form');
+    if (formPesquisa) formPesquisa.classList.add('form-loaded');
+  }
 
   function salvarEdicaoChamado() {
+    const idAtual = document.getElementById('editIdChamado').value;
     const solicitanteSelect = document.getElementById('editSolicitante');
     const nomefuncaoCompleto = solicitanteSelect ? solicitanteSelect.value : '';
     const [nome, funcao] = nomefuncaoCompleto.split(' - ');
 
+    if (!nome) { mostrarAlerta("O campo Solicitante é obrigatório para salvar."); return; }
+
+    const statusNovo = document.getElementById('editStatusChamado').value;
+    const tipoNovo = document.getElementById('editTipoChamado').value;
+    const descNova = document.getElementById('editDescricao').value;
+    const infoNova = document.getElementById('editInformacaoExtra').value;
+    const repNova = document.getElementById('editRepeticaoChamado').value;
+    const comNovo = document.getElementById('editComandoChamado').value;
+
+    const idx = listaChamadosGlobal.findIndex(c => String(c.id) === String(idAtual));
+    if (idx !== -1) {
+      listaChamadosGlobal[idx].solicitante = nome;
+      listaChamadosGlobal[idx].funcao = funcao || listaChamadosGlobal[idx].funcao;
+      listaChamadosGlobal[idx].statusChamado = statusNovo;
+      listaChamadosGlobal[idx].tipoDoChamado = tipoNovo;
+      listaChamadosGlobal[idx].descricao = descNova;
+      listaChamadosGlobal[idx].informacaoExtra = infoNova;
+      listaChamadosGlobal[idx].tipoRepeticao = repNova;
+      listaChamadosGlobal[idx].comando = comNovo;
+    }
+
+    preencherTabelaNativaChamados(listaChamadosGlobal);
+    lerChamadosDoClienteLogado();
+    atualizarBadgeNotificacao();
+
+    mostrarAlerta("Chamado atualizado com sucesso!"); 
+    limparTelaPesquisa(); 
+
     const dados = {
       qualFuncao: "entradaDeInformacoes",
-      idDoChamado: document.getElementById('editIdChamado').value,
-      tipoDoChamado: document.getElementById('editTipoChamado').value,
+      idDoChamado: idAtual,
+      tipoDoChamado: tipoNovo,
       solicitante: nome, 
       funcao: funcao,
-      statusChamado: document.getElementById('editStatusChamado').value,
-      descricao: document.getElementById('editDescricao').value,
-      informacaoExtra: document.getElementById('editInformacaoExtra').value,
-      
-      // Preserva/Atualiza as novas colunas estruturadas no salvamento
-      tipoRepeticao: document.getElementById('editRepeticaoChamado').value,
-      comando: document.getElementById('editComandoChamado').value
+      statusChamado: statusNovo,
+      descricao: descNova,
+      informacaoExtra: infoNova,
+      tipoRepeticao: repNova,
+      comando: comNovo
     };
 
-    if (!dados.solicitante) { mostrarAlerta("O campo Solicitante é obrigatório para salvar."); return; }
-
-    mostrarLoading();
     google.script.run
-      .withSuccessHandler(function(resposta) { 
-        esconderLoading();
-        mostrarAlerta(resposta); 
-        limparTelaPesquisa(); 
-        lerDadosDaTabela(); 
-        atualizarBadgeNotificacao(); 
+      .withSuccessHandler(function(resposta) {
+        if (typeof resposta === "object" && resposta.mensagem) {
+          console.log("Servidor confirmou edição:", resposta.mensagem);
+        }
       })
       .roteadorChamado(dados);
   }
 
-  /** FUNÇÃO QUE LIMPA TELAS DE PESQUISA */
+  window.salvarEdicaoChamado = salvarEdicaoChamado;
+
   function limparTelaPesquisa() {
     const campos = [
       'buscarIdChamado', 'editIdChamado', 'editTipoChamado', 'editSolicitante',
@@ -565,7 +636,6 @@ function configurarPermissoes(nivel) {
       if (el) el.value = '';
     });
     
-    /** Bloqueia novamente os campos no reset de segurança */ 
     const camposParaBloquear = [
       'editTipoChamado', 'editStatusChamado', 'editSolicitante', 
       'editDescricao', 'editInformacaoExtra', 'editComandoChamado'
@@ -579,7 +649,9 @@ function configurarPermissoes(nivel) {
     const form = document.querySelector('.id-search-form');
     if (form) form.classList.remove('form-loaded');
   }
-  /** FUNÇÃO DE LIMPEZA DOS FORMULARIOS DE CHAMADOS VIA TELEFONE */
+
+  window.limparTelaPesquisa = limparTelaPesquisa;
+
   function limparFormularioChamado() {
     if(document.getElementById('idDoChamado')) document.getElementById('idDoChamado').value = '';
     if(document.getElementById('tipoDoChamado')) document.getElementById('tipoDoChamado').value = '';
@@ -590,47 +662,105 @@ function configurarPermissoes(nivel) {
     if(document.getElementById('botaochamado')) document.getElementById('botaochamado').innerHTML = '<i class="bi bi-plus-circle-fill"></i> Registrar Chamado';
   }
 
-  /** FUNÇÃO DE CADASTRO DE CHAMADOS VIA TELEFONE */
+  window.limparFormularioChamado = limparFormularioChamado;
+
   function enviaAoClicar() {
     const solicitanteSelect = document.getElementById('solicitante');
     const nomefuncaoCompleto = solicitanteSelect ? solicitanteSelect.value : '';
     const [nome, funcao] = nomefuncaoCompleto.split(' - ');
+    const idAtual = document.getElementById('idDoChamado').value;
+
+    if (!nome) { mostrarAlerta("Preencha o campo Solicitante, ele é obrigatório."); return; }
+
+    const tipoVal = document.getElementById('tipoDoChamado').value;
+    const statusVal = document.getElementById('statusChamado').value;
+    const descVal = document.getElementById('descricao').value;
+    const infoVal = document.getElementById('informacaoExtra').value;
+    const agora = new Date();
+    const horaStr = agora.toLocaleTimeString('pt-BR');
+    const dataStr = agora.toLocaleDateString('pt-BR');
+
+    let itemTarget;
+
+    if (!idAtual || idAtual === "") {
+      itemTarget = {
+        id: "...",
+        tipoDoChamado: tipoVal,
+        solicitante: nome,
+        funcao: funcao,
+        statusChamado: statusVal,
+        descricao: descVal,
+        informacaoExtra: infoVal,
+        hora: horaStr,
+        data: dataStr
+      };
+      listaChamadosGlobal.unshift(itemTarget);
+    } else {
+      const idx = listaChamadosGlobal.findIndex(c => String(c.id) === String(idAtual));
+      if (idx !== -1) {
+        itemTarget = listaChamadosGlobal[idx];
+        itemTarget.tipoDoChamado = tipoVal;
+        itemTarget.solicitante = nome;
+        itemTarget.funcao = funcao || itemTarget.funcao;
+        itemTarget.statusChamado = statusVal;
+        itemTarget.descricao = descVal;
+        itemTarget.informacaoExtra = infoVal;
+      }
+    }
+
+    preencherTabelaNativaChamados(listaChamadosGlobal);
+    lerChamadosDoClienteLogado();
+    atualizarBadgeNotificacao();
+
+    mostrarAlerta("Chamado registrado/atualizado com sucesso!"); 
+    limparFormularioChamado(); 
 
     const dados = {
         qualFuncao: "entradaDeInformacoes",
-        idDoChamado: document.getElementById('idDoChamado').value,
-        tipoDoChamado: document.getElementById('tipoDoChamado').value,
-        solicitante: nome, funcao: funcao,
-        statusChamado: document.getElementById('statusChamado').value,
-        descricao: document.getElementById('descricao').value,
-        informacaoExtra: document.getElementById('informacaoExtra').value
+        idDoChamado: idAtual,
+        tipoDoChamado: tipoVal,
+        solicitante: nome, 
+        funcao: funcao,
+        statusChamado: statusVal,
+        descricao: descVal,
+        informacaoExtra: infoVal
     };
 
-    if (!dados.solicitante) { mostrarAlerta("Preencha o campo Solicitante, ele é obrigatório."); return; }
-
     google.script.run
-        .withSuccessHandler(function(resposta) { mostrarAlerta(resposta); limparFormularioChamado(); lerDadosDaTabela(); atualizarBadgeNotificacao(); })
+        .withSuccessHandler(function(resposta) {
+          if (resposta && resposta.id && itemTarget) {
+            itemTarget.id = resposta.id;
+            if (resposta.hora) itemTarget.hora = resposta.hora;
+            if (resposta.data) itemTarget.data = resposta.data;
+          }
+          preencherTabelaNativaChamados(listaChamadosGlobal);
+          lerChamadosDoClienteLogado();
+        })
         .roteadorChamado(dados);
   }
 
-  /** FUNÇÃO QUE LER OS DADOS DA TABELA CHAMADOS */  
+  window.enviaAoClicar = enviaAoClicar;
+
   function lerDadosDaTabela() {
     if (!document.getElementById("tabela-chamados-body")) return;
+
+    if (listaChamadosGlobal.length > 0) {
+      preencherTabelaNativaChamados(listaChamadosGlobal);
+      return;
+    }
+
     google.script.run
       .withSuccessHandler(function (resposta) {
         if (Array.isArray(resposta)) {
-          resposta.sort((a, b) => {
-            if (a.statusChamado === "Pendente" && b.statusChamado !== "Pendente") return -1;
-            if (a.statusChamado !== "Pendente" && b.statusChamado === "Pendente") return 1;
-            return Number(b.id) - Number(a.id);
-          });
+          listaChamadosGlobal = resposta;
         }
-        preencherTabelaNativaChamados(resposta);
+        preencherTabelaNativaChamados(listaChamadosGlobal);
       })
       .roteadorChamado({ qualFuncao: "lerChamados" });
   }
 
-  /** FUNÇÃO PREENCHE TABELA CHAMADOS */
+  window.lerDadosDaTabela = lerDadosDaTabela;
+
   function preencherTabelaNativaChamados(dados) {
     const tbody = document.getElementById("tabela-chamados-body");
     if (!tbody) return;
@@ -641,7 +771,13 @@ function configurarPermissoes(nivel) {
       return;
     }
 
-    dados.forEach(item => {
+    const dadosOrdenados = [...dados].sort((a, b) => {
+      if (a.statusChamado === "Pendente" && b.statusChamado !== "Pendente") return -1;
+      if (a.statusChamado !== "Pendente" && b.statusChamado === "Pendente") return 1;
+      return Number(b.id) - Number(a.id);
+    });
+
+    dadosOrdenados.forEach(item => {
       const tr = document.createElement("tr");
       tr.dataset.chamadoRaw = JSON.stringify(item);
       
@@ -699,7 +835,8 @@ function configurarPermissoes(nivel) {
     });
   }
 
-  /** MÓDULO DE CADASTRO E GERENCIAMENTO DE USUÁRIOS */
+  /** MÓDULO DE CADASTRO E GERENCIAMENTO DE USUÁRIOS (OPTIMISTIC UI) */
+
   function verificarPermissaoSenha() {
     try {
       const permissao = document.getElementById("userPermissao").value;
@@ -721,7 +858,8 @@ function configurarPermissoes(nivel) {
     }
   }
 
-  /** FUNÇÃO QUE LIMPA OS FORMULÁRIOS */
+  window.verificarPermissaoSenha = verificarPermissaoSenha;
+
   function limparFormulario() {
       if(document.getElementById('idUsuario')) document.getElementById('idUsuario').value = "";
       if(document.getElementById('nome')) document.getElementById('nome').value = "";
@@ -736,43 +874,120 @@ function configurarPermissoes(nivel) {
       if(document.getElementById('salvarBotao')) document.getElementById('salvarBotao').innerHTML = '<i class="bi bi-person-plus-fill"></i> Criar';
   }
 
-  /** FUNÇÃO QUE SALVA OS USUÁRIOS*/
+  window.limparFormulario = limparFormulario;
+
   function salvarUsuario() {
+    const idVal = document.getElementById('idUsuario').value;
     const nome = document.getElementById("nome").value;
+    const sobrenome = document.getElementById("sobrenome").value;
     const funcao = document.getElementById("funcao").value;
+    const cargo = document.getElementById("cargo").value;
+    const usuario = document.getElementById("usuario").value;
+    const ramal = document.getElementById("ramal").value;
     const permissao = document.getElementById("userPermissao").value;
     const senha = document.getElementById("userSenha") ? document.getElementById("userSenha").value : "";
 
     if (nome === "" || funcao === "") { mostrarAlerta("Preencha os campos Nome e Função, eles são obrigatórios."); return; }
     if ((permissao === "admin" || permissao === "cliente") && senha === "") { mostrarAlerta("Definição de senha obrigatória para este nível de acesso."); return; }
 
+    let itemTarget;
+
+    if (!idVal || idVal === "") {
+      itemTarget = {
+        id: "...",
+        nome: nome,
+        sobrenome: sobrenome,
+        funcao: funcao,
+        cargo: cargo,
+        usuario: usuario,
+        ramal: ramal,
+        permissao: permissao,
+        senha: senha
+      };
+      listaUsuariosGlobal.unshift(itemTarget);
+    } else {
+      const idx = listaUsuariosGlobal.findIndex(u => String(u.id) === String(idVal));
+      if (idx !== -1) {
+        itemTarget = listaUsuariosGlobal[idx];
+        itemTarget.nome = nome;
+        itemTarget.sobrenome = sobrenome;
+        itemTarget.funcao = funcao;
+        itemTarget.cargo = cargo;
+        itemTarget.usuario = usuario;
+        itemTarget.ramal = ramal;
+        itemTarget.permissao = permissao;
+        itemTarget.senha = senha;
+      }
+    }
+
+    preencherTabelaNativaUsuarios(listaUsuariosGlobal);
+    atualizarSelectsSolicitanteLocal();
+    mostrarAlerta(!idVal ? "Usuário cadastrado com sucesso!" : "Usuário atualizado com sucesso!");
+    limparFormulario();
+
     const dados = {
-      qualFuncao: "cadastraUsuario", idUsuario: document.getElementById('idUsuario').value,
-      nome: nome, sobrenome: document.getElementById('sobrenome').value,
-      funcao: funcao, cargo: document.getElementById('cargo').value,
-      usuario: document.getElementById('usuario').value, ramal: document.getElementById('ramal').value,
-      permissao: permissao, senha: senha
+      qualFuncao: "cadastraUsuario", 
+      idUsuario: idVal,
+      nome: nome, 
+      sobrenome: sobrenome,
+      funcao: funcao, 
+      cargo: cargo,
+      usuario: usuario, 
+      ramal: ramal,
+      permissao: permissao, 
+      senha: senha
     };
 
     google.script.run
-      .withSuccessHandler(function (resposta) { mostrarAlerta(resposta); limparFormulario(); lerDadosDosUsuarios(); preencherSelectSolicitante(); })
+      .withSuccessHandler(function (resposta) {
+        if (resposta && resposta.id && itemTarget) {
+          itemTarget.id = resposta.id;
+        }
+        preencherTabelaNativaUsuarios(listaUsuariosGlobal);
+      })
       .roteadorChamado(dados);
   }
 
-   /** FUNÇÃO QUE LER DADOS DOS USUÁRIOS */
+  window.salvarUsuario = salvarUsuario;
+
   function lerDadosDosUsuarios() {
     if (!document.getElementById("tabela-usuarios-body")) return;
-    google.script.run.withSuccessHandler(preencherTabelaNativaUsuarios).roteadorChamado({ qualFuncao: "lerUsuarios" });
-  }
 
-   /** FUNÇÃO QUE DELETA OS USUÁRIOS*/
-  function deletarUsuario(){
+    if (listaUsuariosGlobal.length > 0) {
+      preencherTabelaNativaUsuarios(listaUsuariosGlobal);
+      return;
+    }
+
     google.script.run
-      .withSuccessHandler(function (resposta) { mostrarAlerta(resposta); limparFormulario(); lerDadosDosUsuarios(); })
-      .roteadorChamado({ qualFuncao: "deletarUsuarios", idUsuario: document.getElementById('idUsuario').value });
+      .withSuccessHandler(function(resposta) {
+        if (Array.isArray(resposta)) {
+          listaUsuariosGlobal = resposta;
+        }
+        preencherTabelaNativaUsuarios(listaUsuariosGlobal);
+      })
+      .roteadorChamado({ qualFuncao: "lerUsuarios" });
   }
 
-  /** FUNÇÃO QUE PREENCHE TABELA DE USUÁRIOS*/
+  window.lerDadosDosUsuarios = lerDadosDosUsuarios;
+
+  function deletarUsuario() {
+    const idVal = document.getElementById('idUsuario').value;
+    if (!idVal) { mostrarAlerta("Selecione um usuário para excluir."); return; }
+
+    listaUsuariosGlobal = listaUsuariosGlobal.filter(u => String(u.id) !== String(idVal));
+    preencherTabelaNativaUsuarios(listaUsuariosGlobal);
+    atualizarSelectsSolicitanteLocal();
+
+    mostrarAlerta("Usuário deletado com sucesso.");
+    limparFormulario();
+
+    google.script.run
+      .withSuccessHandler(function (resposta) {})
+      .roteadorChamado({ qualFuncao: "deletarUsuarios", idUsuario: idVal });
+  }
+
+  window.deletarUsuario = deletarUsuario;
+
   function preencherTabelaNativaUsuarios(dados) {
     const tbody = document.getElementById("tabela-usuarios-body");
     if (!tbody) return;
@@ -822,8 +1037,17 @@ function configurarPermissoes(nivel) {
     const badgeAntigo = document.getElementById("badge-notificacao"); 
     if (!badgePC && !badgeMobile && !badgeAntigo) return;
 
+    if (listaChamadosGlobal.length > 0) {
+      const pendentes = listaChamadosGlobal.filter(c => c.statusChamado === "Pendente").length;
+      if (badgePC) badgePC.textContent = pendentes;
+      if (badgeMobile) badgeMobile.textContent = pendentes;
+      if (badgeAntigo) badgeAntigo.textContent = pendentes;
+      return;
+    }
+
     google.script.run.withSuccessHandler(function(chamados) {
       if (Array.isArray(chamados)) {
+        listaChamadosGlobal = chamados;
         const pendentes = chamados.filter(c => c.statusChamado === "Pendente").length;
         if (badgePC) badgePC.textContent = pendentes;
         if (badgeMobile) badgeMobile.textContent = pendentes;
@@ -831,6 +1055,8 @@ function configurarPermissoes(nivel) {
       }
     }).roteadorChamado({ qualFuncao: "lerChamados" });
   }
+
+  window.atualizarBadgeNotificacao = atualizarBadgeNotificacao;
 
   function verificarTipoRepeticao() {
     const tipo = document.getElementById("taskRepeticao").value;
@@ -844,6 +1070,8 @@ function configurarPermissoes(nivel) {
     }
   }
 
+  window.verificarTipoRepeticao = verificarTipoRepeticao;
+
   window.abrirModalTarefa = function() {
     const form = document.getElementById("taskForm");
     if (form) form.reset();
@@ -852,21 +1080,21 @@ function configurarPermissoes(nivel) {
     document.getElementById("taskModalTitle").textContent = "Criar Tarefa";
     verificarTipoRepeticao();
     
-    google.script.run.withSuccessHandler(function(usuarios) {
-      const select = document.getElementById("taskResponsavel");
-      if (!select) return;
-      
+    const select = document.getElementById("taskResponsavel");
+    if (select) {
       select.innerHTML = '<option value="" disabled selected>Selecione...</option>';
-      usuarios.forEach(u => {
-        const option = document.createElement("option");
-        option.value = u.nome; 
-        option.textContent = u.nome + " (" + u.funcao + ")";
-        select.appendChild(option);
-      });
-      
-      const modal = document.getElementById("taskModal");
-      if (modal) { modal.classList.add("modal-open"); modal.style.display = "flex"; }
-    }).roteadorChamado({ qualFuncao: "lerUsuarios" });
+      if (listaUsuariosGlobal.length > 0) {
+        listaUsuariosGlobal.forEach(u => {
+          const option = document.createElement("option");
+          option.value = u.nome; 
+          option.textContent = u.nome + " (" + u.funcao + ")";
+          select.appendChild(option);
+        });
+      }
+    }
+
+    const modal = document.getElementById("taskModal");
+    if (modal) { modal.classList.add("modal-open"); modal.style.display = "flex"; }
   };
 
   window.fecharModalTarefa = function() {
@@ -874,10 +1102,11 @@ function configurarPermissoes(nivel) {
     if (modal) { modal.classList.remove("modal-open"); modal.style.display = "none"; }
   };
 
- window.salvarTarefa = function() {
+  window.salvarTarefa = function() {
+    const idVal = document.getElementById("idTarefa").value;
     const rotinaNome = document.getElementById("taskRotinaNome").value.trim();
     const desc = document.getElementById("taskDescricao").value;
-    const comandoTexto = document.getElementById("taskComando").value.trim(); // Captura o novo input
+    const comandoTexto = document.getElementById("taskComando").value.trim();
     const repeticao = document.getElementById("taskRepeticao").value;
     const dataVal = document.getElementById("taskData").value;
     const hora = document.getElementById("taskHora").value;
@@ -890,15 +1119,42 @@ function configurarPermissoes(nivel) {
 
     const partesDoNome = respCompleto.split(" ");
     const respCurto = partesDoNome[0] + (partesDoNome[1] ? " " + partesDoNome[1] : "");
+    const descCombinada = rotinaNome + " // " + comandoTexto + " // " + desc;
 
-    mostrarLoading();
-    
+    let itemTarget;
+
+    if (!idVal || idVal === "") {
+      itemTarget = {
+        id: "...",
+        descricao: descCombinada,
+        tipoRepeticao: repeticao,
+        data: repeticao === "Diaria" ? "Todos os dias" : dataVal,
+        hora: hora,
+        responsavel: respCurto
+      };
+      listaTarefasGlobal.unshift(itemTarget);
+    } else {
+      const idx = listaTarefasGlobal.findIndex(t => String(t.id) === String(idVal));
+      if (idx !== -1) {
+        itemTarget = listaTarefasGlobal[idx];
+        itemTarget.descricao = descCombinada;
+        itemTarget.tipoRepeticao = repeticao;
+        itemTarget.data = repeticao === "Diaria" ? "Todos os dias" : dataVal;
+        itemTarget.hora = hora;
+        itemTarget.responsavel = respCurto;
+      }
+    }
+
+    preencherTabelaNativaTarefas(listaTarefasGlobal);
+    fecharModalTarefa();
+    mostrarAlerta(!idVal ? "Tarefa agendada com sucesso!" : "Tarefa de rotina atualizada!");
+
     const dados = {
       qualFuncao: "cadastraTarefa", 
-      idTarefa: document.getElementById("idTarefa").value,
+      idTarefa: idVal,
       rotina: rotinaNome,
       descricao: desc, 
-      comando: comandoTexto, // Mapeado para envio estável
+      comando: comandoTexto, 
       tipoRepeticao: repeticao, 
       data: dataVal, 
       hora: hora, 
@@ -908,17 +1164,29 @@ function configurarPermissoes(nivel) {
     };
 
     google.script.run.withSuccessHandler(function(resposta) {
-      esconderLoading(); 
-      fecharModalTarefa(); 
-      mostrarAlerta(resposta); 
-      lerDadosDasTarefas();
-      try { lerDadosDaTabela(); } catch(e){}
+      if (resposta && resposta.id && itemTarget) {
+        itemTarget.id = resposta.id;
+      }
+      preencherTabelaNativaTarefas(listaTarefasGlobal);
     }).roteadorChamado(dados);
   };
 
   window.lerDadosDasTarefas = function() {
     if (!document.getElementById("tabela-tarefas-body")) return;
-    google.script.run.withSuccessHandler(preencherTabelaNativaTarefas).roteadorChamado({ qualFuncao: "lerTarefas" });
+
+    if (listaTarefasGlobal.length > 0) {
+      preencherTabelaNativaTarefas(listaTarefasGlobal);
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(function(resposta) {
+        if (Array.isArray(resposta)) {
+          listaTarefasGlobal = resposta;
+        }
+        preencherTabelaNativaTarefas(listaTarefasGlobal);
+      })
+      .roteadorChamado({ qualFuncao: "lerTarefas" });
   };
 
   window.preencherTabelaNativaTarefas = function(dados) {
@@ -937,7 +1205,6 @@ function configurarPermissoes(nivel) {
       let comandoDiretriz = "---";
       let descricaoReal = textoCel;
 
-      // Se a tarefa possuir o formato triplo compactado, separa os campos para exibição individual
       if (textoCel.includes(" // ")) {
         let partes = textoCel.split(" // ");
         if (partes.length >= 3) {
@@ -973,45 +1240,50 @@ function configurarPermissoes(nivel) {
     });
   };
 
-
   window.editarTarefaEspecifica = function(id) {
+    const tarefaLocal = listaTarefasGlobal.find(t => String(t.id) === String(id));
+    
+    if (tarefaLocal) {
+      abrirModalEdicaoTarefaObjeto(tarefaLocal);
+      return;
+    }
+
     mostrarLoading();
     google.script.run
       .withSuccessHandler(function(tarefa) {
-        if (!tarefa) { esconderLoading(); mostrarAlerta("Erro: Os dados desta tarefa não foram localizados."); return; }
-
-        document.getElementById("idTarefa").value = tarefa.id || "";
-        document.getElementById("taskRotinaNome").value = tarefa.rotina || ""; 
-        document.getElementById("taskDescricao").value = tarefa.descricao || "";
-        document.getElementById("taskComando").value = tarefa.comando || ""; // Devolve o comando ao modal na edição
-        document.getElementById("taskRepeticao").value = tarefa.tipoRepeticao || "Diaria";
-        document.getElementById("taskHora").value = tarefa.hora || "";
-        document.getElementById("taskModalTitle").textContent = "Editar Tarefa";
-        
-        if (typeof verificarTipoRepeticao === "function") verificarTipoRepeticao();
-        if (tarefa.tipoRepeticao === "Mensal") document.getElementById("taskData").value = tarefa.data || "";
-
-        google.script.run
-          .withSuccessHandler(function(usuarios) {
-            esconderLoading(); 
-            const select = document.getElementById("taskResponsavel");
-            if (select) {
-              select.innerHTML = '';
-              usuarios.forEach(u => {
-                const option = document.createElement("option");
-                option.value = u.nome; option.textContent = u.nome;
-                select.appendChild(option);
-              });
-              select.value = tarefa.responsavel;
-            }
-            const modal = document.getElementById("taskModal");
-            if (modal) { modal.classList.add("modal-open"); modal.style.display = "flex"; }
-          })
-          .roteadorChamado({ qualFuncao: "lerUsuarios" });
+        esconderLoading();
+        if (!tarefa) { mostrarAlerta("Erro: Os dados desta tarefa não foram localizados."); return; }
+        abrirModalEdicaoTarefaObjeto(tarefa);
       })
       .withFailureHandler(function() { esconderLoading(); })
       .roteadorChamado({ qualFuncao: "buscarUnicaTarefa", idTarefa: id });
   };
+
+  function abrirModalEdicaoTarefaObjeto(tarefa) {
+    document.getElementById("idTarefa").value = tarefa.id || "";
+    document.getElementById("taskRotinaNome").value = tarefa.rotina || ""; 
+    document.getElementById("taskDescricao").value = tarefa.descricao || "";
+    document.getElementById("taskComando").value = tarefa.comando || ""; 
+    document.getElementById("taskRepeticao").value = tarefa.tipoRepeticao || "Diaria";
+    document.getElementById("taskHora").value = tarefa.hora || "";
+    document.getElementById("taskModalTitle").textContent = "Editar Tarefa";
+    
+    if (typeof verificarTipoRepeticao === "function") verificarTipoRepeticao();
+    if (tarefa.tipoRepeticao === "Mensal") document.getElementById("taskData").value = tarefa.data || "";
+
+    const select = document.getElementById("taskResponsavel");
+    if (select) {
+      select.innerHTML = '';
+      listaUsuariosGlobal.forEach(u => {
+        const option = document.createElement("option");
+        option.value = u.nome; option.textContent = u.nome;
+        select.appendChild(option);
+      });
+      select.value = tarefa.responsavel;
+    }
+    const modal = document.getElementById("taskModal");
+    if (modal) { modal.classList.add("modal-open"); modal.style.display = "flex"; }
+  }
 
   function editarSolicitanteSelects(data) {
     const selectTel = document.getElementById('solicitante');
@@ -1028,10 +1300,32 @@ function configurarPermissoes(nivel) {
     });
   }
 
+  function atualizarSelectsSolicitanteLocal() {
+    if (listaUsuariosGlobal.length === 0) return;
+    const selectTel = document.getElementById('solicitante');
+    const selectPesq = document.getElementById('editSolicitante');
+    if (selectTel) selectTel.innerHTML = '<option value="" disabled selected>Selecione um solicitante...</option>';
+    if (selectPesq) selectPesq.innerHTML = '<option value="" disabled selected>Selecione um solicitante...</option>';
+
+    listaUsuariosGlobal.forEach(u => {
+      if (u.nome) {
+        const optionValue = u.nome + ' - ' + (u.cargo || u.funcao || "Geral");
+        if (selectTel) { let opt = document.createElement('option'); opt.value = optionValue; opt.textContent = optionValue; selectTel.appendChild(opt); }
+        if (selectPesq) { let opt = document.createElement('option'); opt.value = optionValue; opt.textContent = optionValue; selectPesq.appendChild(opt); }
+      }
+    });
+  }
+
   function preencherSelectSolicitante() {
     if (!document.getElementById('solicitante') && !document.getElementById('editSolicitante')) return;
+    if (listaUsuariosGlobal.length > 0) {
+      atualizarSelectsSolicitanteLocal();
+      return;
+    }
     google.script.run.withSuccessHandler(editarSolicitanteSelects).listarNomeCargo();
   }
+
+  window.preencherSelectSolicitante = preencherSelectSolicitante;
 
   function mostrarAlerta(mensagem) {
     const modal = document.getElementById('customAlertModal');
@@ -1041,33 +1335,40 @@ function configurarPermissoes(nivel) {
     } else { alert(mensagem); }
   }
 
+  window.mostrarAlerta = mostrarAlerta;
+
   function fecharModalAlerta() {
     const modal = document.getElementById('customAlertModal');
     if (modal) { modal.classList.remove('modal-open'); modal.style.display = 'none'; }
   }
+
+  window.fecharModalAlerta = fecharModalAlerta;
 
   function mostrarLoading() {
     const loading = document.getElementById('loadingModal');
     if (loading) { loading.classList.add('modal-open'); loading.style.display = 'flex'; }
   }
 
+  window.mostrarLoading = mostrarLoading;
+
   function esconderLoading() {
     const loading = document.getElementById('loadingModal');
     if (loading) { loading.classList.remove('modal-open'); loading.style.display = 'none'; }
   }
 
-window.deletarTarefaEspecifica = function(id) {
+  window.esconderLoading = esconderLoading;
+
+  window.deletarTarefaEspecifica = function(id) {
     abrirConfirmModal(
       "Excluir Tarefa", 
       `Deseja realmente excluir a tarefa de rotina #${id}?`, 
       function() {
-        mostrarLoading();
+        listaTarefasGlobal = listaTarefasGlobal.filter(t => String(t.id) !== String(id));
+        preencherTabelaNativaTarefas(listaTarefasGlobal);
+        mostrarAlerta("Tarefa removida com sucesso.");
+
         google.script.run
-          .withSuccessHandler(function(resposta) {
-            esconderLoading(); 
-            mostrarAlerta(resposta); 
-            lerDadosDasTarefas();
-          })
+          .withSuccessHandler(function(resposta) {})
           .roteadorChamado({ qualFuncao: "deletarTarefa", idTarefa: id });
       }
     );
@@ -1102,7 +1403,8 @@ window.deletarTarefaEspecifica = function(id) {
     }
   }
 
-  /** Fecha o modal de confirmação */ 
+  window.abrirConfirmModal = abrirConfirmModal;
+
   function fecharConfirmModal() {
     try {
       const modal = document.getElementById("confirmModal");
@@ -1115,646 +1417,495 @@ window.deletarTarefaEspecifica = function(id) {
     }
   }
 
+  window.fecharConfirmModal = fecharConfirmModal;
 
-  /**CONTROLE DA INTERFACE DE ROTINAS ATIVAS E HISTÓRICO*/
+  /** MÓDULO DE EQUIPAMENTOS COM OPTIMISTIC UI E CACHE LOCAL */
 
-
-let cacheRotinaAtual = null;
-let cacheHistoricoRotinasMap = {};
-
-function carregarCardRotinaAbertura() {
-  const container = document.getElementById("container-regras-rotinas");
-  if (!container) return;
-
-  container.innerHTML = `<p style="color: var(--text-color-faded); padding: 12px;">Verificando status da rotina no dia de hoje...</p>`;
-
-  google.script.run
-    .withSuccessHandler(function(resultado) {
-      container.innerHTML = "";
-
-      if (!resultado.encontrado) {
-        container.innerHTML = `
-          <div class="placeholder-view" style="grid-column: 1/-1;">
-            <i class="bi bi-calendar-x"></i>Nenhum chamado de rotina "Abertura" foi gerado para a data de hoje.
-          </div>`;
-      } else {
-        cacheRotinaAtual = resultado;
-        renderizarCardRotina(container, resultado, "Hoje");
-      }
-
-      // Carrega automaticamente o histórico das últimas 5 rotinas
-      carregarHistoricoRotinas();
-    })
-    .roteadorChamado({ qualFuncao: "consultarStatusRotina", nomeRotina: "Abertura" });
-}
-
-function carregarHistoricoRotinas() {
-  const containerHist = document.getElementById("container-historico-rotinas");
-  const btnRestaurar = document.getElementById("btnRestaurarHistorico");
-  const tituloHist = document.getElementById("titulo-secao-historico");
-  
-  if (!containerHist) return;
-  
-  if (btnRestaurar) btnRestaurar.style.display = "none";
-  if (tituloHist) tituloHist.textContent = "Últimas 5 Rotinas Anteriores";
-  containerHist.innerHTML = `<p style="color: var(--text-color-faded); padding: 12px;">Carregando histórico anterior...</p>`;
-
-  google.script.run
-    .withSuccessHandler(function(resposta) {
-      containerHist.innerHTML = "";
-      cacheHistoricoRotinasMap = {};
-
-      if (!resposta.historico || resposta.historico.length === 0) {
-        containerHist.innerHTML = `
-          <div class="placeholder-view" style="grid-column: 1/-1; padding: 20px;">
-            <i class="bi bi-clock-history"></i>Nenhum histórico de rotinas anteriores localizado.
-          </div>`;
-        return;
-      }
-
-      resposta.historico.forEach(rotina => {
-        cacheHistoricoRotinasMap[rotina.data] = rotina;
-        renderizarCardRotina(containerHist, rotina, rotina.data);
-      });
-    })
-    .roteadorChamado({ qualFuncao: "consultarHistoricoRotinas", nomeRotina: "Abertura" });
-}
-
-function buscarRotinaPorData() {
-  const inputData = document.getElementById("inputDataBuscaRotina");
-  const dataValor = inputData ? inputData.value : "";
-
-  if (!dataValor) {
-    if (typeof mostrarAlerta === "function") mostrarAlerta("Por favor, escolha uma data para pesquisar.");
-    return;
-  }
-
-  // Converte AAAA-MM-DD para DD/MM/AAAA
-  const partes = dataValor.split("-");
-  const dataFormatadaBR = `${partes[2]}/${partes[1]}/${partes[0]}`;
-
-  const containerHist = document.getElementById("container-historico-rotinas");
-  const btnRestaurar = document.getElementById("btnRestaurarHistorico");
-  const tituloHist = document.getElementById("titulo-secao-historico");
-
-  if (!containerHist) return;
-
-  mostrarLoading();
-
-  google.script.run
-    .withSuccessHandler(function(resposta) {
-      esconderLoading();
-      containerHist.innerHTML = "";
-
-      if (btnRestaurar) btnRestaurar.style.display = "inline-block";
-      if (tituloHist) tituloHist.textContent = `Resultado da pesquisa: ${dataFormatadaBR}`;
-
-      if (!resposta.buscaResultado || !resposta.buscaResultado.encontrado) {
-        containerHist.innerHTML = `
-          <div class="placeholder-view" style="grid-column: 1/-1; padding: 20px;">
-            <i class="bi bi-search"></i>Nenhuma rotina registrada para a data ${dataFormatadaBR}.
-          </div>`;
-        return;
-      }
-
-      const rotina = resposta.buscaResultado;
-      cacheHistoricoRotinasMap[rotina.data] = rotina;
-      renderizarCardRotina(containerHist, rotina, rotina.data);
-    })
-    .withFailureHandler(function(erro) {
-      esconderLoading();
-      if (typeof mostrarAlerta === "function") mostrarAlerta("Erro ao pesquisar: " + erro.message);
-    })
-    .roteadorChamado({ qualFuncao: "consultarHistoricoRotinas", nomeRotina: "Abertura", dataBusca: dataFormatadaBR });
-}
-
-function renderizarCardRotina(container, resultado, rotuloData) {
-  let corBg = resultado.statusGeral === "Pendente" ? "rgba(245, 158, 11, 0.1)" : "rgba(16, 185, 129, 0.1)";
-  let corTexto = resultado.statusGeral === "Pendente" ? "var(--cor-pendente)" : "var(--cor-acaopositiva)";
-
-  const card = document.createElement("div");
-  card.className = "card1";
-  card.style.height = "auto";
-  card.style.flexDirection = "column";
-  card.style.alignItems = "flex-start";
-  card.style.gap = "12px";
-
-  card.innerHTML = `
-    <div style="display:flex; justify-content:space-between; width:100%; align-items:center; border-bottom:1px solid var(--cor-linhas); padding-bottom:6px;">
-      <span style="font-family:monospace; color:var(--cor-primaria); font-weight:600; text-transform:uppercase;">${resultado.nomeRotina}</span>
-      <span style="padding: 2px 8px; border-radius:4px; font-size:11px; font-weight:600; background-color:${corBg}; color:${corTexto};">${resultado.statusGeral}</span>
-    </div>
-    <div style="width:100%;">
-      <p style="margin:0; font-size:14px; font-weight:700; color:white;">Rotina de ${resultado.nomeRotina}</p>
-      <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-color-faded);">📅 Data: <strong>${resultado.data}</strong></p>
-    </div>
-    <div style="width:100%; margin-top:4px;">
-      <button type="button" class="butons-bot" onclick="abrirModalDetalhesRotinaObjeto('${resultado.data}')" style="height:32px; font-size:12px; width:100%; justify-content:center;">
-        <i class="bi bi-eye"></i> Ver mais
-      </button>
-    </div>
-  `;
-  container.appendChild(card);
-}
-
-function abrirModalDetalhesRotinaObjeto(dataChave) {
-  let rotinaAlvo = cacheHistoricoRotinasMap[dataChave] || (cacheRotinaAtual && cacheRotinaAtual.data === dataChave ? cacheRotinaAtual : null);
-  if (!rotinaAlvo) return;
-
-  // Atualiza o cache global ativo para o gerador de PDF imprimir a rotina selecionada
-  cacheRotinaAtual = rotinaAlvo;
-
-  document.getElementById("mdRotinaSolicitante").textContent = rotinaAlvo.solicitante || "Não informado";
-  document.getElementById("mdRotinaData").textContent = rotinaAlvo.data;
-
-  const tbody = document.getElementById("mdRotinaTabelaBody");
-  tbody.innerHTML = "";
-
-  rotinaAlvo.tarefas.forEach(task => {
-    const tr = document.createElement("tr");
-    tr.style.borderBottom = "1px solid var(--cor-linhas)";
-
-    let corTextoStatus = task.status === "Concluído" ? "var(--cor-acaopositiva)" : "var(--cor-pendente)";
-
-    tr.innerHTML = `
-      <td style="padding: 10px; color: white; white-space: normal; word-break: break-word;">${task.descricao}</td>
-      <td style="padding: 10px;">
-        <span style="padding: 2px 6px; border-radius: 4px; font-size: 11px; background-color: rgba(139, 92, 246, 0.1); color: var(--cor-primaria);">
-          ${task.quando}
-        </span>
-      </td>
-      <td style="padding: 10px; color: var(--text-color-faded); font-style: italic; white-space: normal; word-break: break-word;">${task.comando}</td>
-      <td style="padding: 10px; font-weight: 600; color: ${corTextoStatus};">${task.status}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  const modal = document.getElementById("modalDetalhesRotina");
-  if (modal) { modal.style.display = "flex"; modal.classList.add("modal-open"); }
-}
-
-function abrirModalDetalhesRotina() {
-  if (cacheRotinaAtual && cacheRotinaAtual.data) {
-    abrirModalDetalhesRotinaObjeto(cacheRotinaAtual.data);
-  }
-}
-
-function fecharModalDetalhesRotina() {
-  const modal = document.getElementById("modalDetalhesRotina");
-  if (modal) { modal.style.display = "none"; modal.classList.remove("modal-open"); }
-}
-
-
-
- /**  GERADOR DE PDF / IMPRESSÃO VIA ESTRUTURA HTML DIRETA */
-
-function gerarPdfChecklistRotina() {
-  if (!cacheRotinaAtual || !cacheRotinaAtual.tarefas) {
-    if (typeof mostrarAlerta === "function") mostrarAlerta("Nenhum dado encontrado para gerar o PDF.");
-    return;
-  }
-
-  var operadoresTexto = cacheRotinaAtual.solicitante || "Não informado";
-  if (Array.isArray(cacheRotinaAtual.operadores) && cacheRotinaAtual.operadores.length > 0) {
-    operadoresTexto = cacheRotinaAtual.operadores.join(" / ");
-  }
-
-  // Preenche os metadados do cabeçalho no HTML
-  document.getElementById("print-rotina-nome").textContent = "Rotina: " + (cacheRotinaAtual.nomeRotina || 'Abertura');
-  document.getElementById("print-meta-data").textContent = cacheRotinaAtual.data || '';
-  document.getElementById("print-meta-operadores").textContent = operadoresTexto;
-
-  // Monta as linhas da tabela com a regra OK / NÃO
-  var tbody = document.getElementById("print-tabela-body");
-  tbody.innerHTML = "";
-
-  cacheRotinaAtual.tarefas.forEach(function(t) {
-    var statusOk = "";
-    var statusNao = "";
-
-    if (String(t.status).toLowerCase() === "concluído" || String(t.status).toLowerCase() === "concluido") {
-      statusOk = "<b style='color:#10b981;'>OK</b>";
-    } else {
-      statusNao = "<b style='color:#ef4444;'>NÃO</b>";
+  function carregarEquipamentos() {
+    const tbody = document.getElementById("tabela-equipamentos-body");
+    
+    if (listaEquipamentosGlobal.length > 0) {
+      renderizarTabelaEquipamentos(listaEquipamentosGlobal);
+      return;
     }
 
-    var tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td style="text-align: left;">${t.descricao || "---"}</td>
-      <td style="text-align: center;">${t.quando || "Diariamente"}</td>
-      <td style="text-align: left;">${t.comando || "---"}</td>
-      <td style="text-align: center;">${statusOk}</td>
-      <td style="text-align: center;">${statusNao}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: var(--text-color-faded);">Carregando equipamentos...</td></tr>`;
 
-  // Dispara a impressão nativa utilizando o layout formatado com a logo Base64 do HTML
-  window.print();
-};
-  // Variável global para armazenar a lista localmente para busca rápida
-  let listaEquipamentosGlobal = [];
-
-// 1. CARREGAR EQUIPAMENTOS DO BACKEND VIA ROTEADOR
-function carregarEquipamentos() {
-  const tbody = document.getElementById("tabela-equipamentos-body");
-  tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: var(--text-color-faded);">Carregando equipamentos...</td></tr>`;
-
-  if (typeof google !== "undefined" && google.script && google.script.run) {
-    google.script.run
-      .withSuccessHandler(function (resposta) {
-        listaEquipamentosGlobal = resposta || [];
-        renderizarTabelaEquipamentos(listaEquipamentosGlobal);
-      })
-      .withFailureHandler(function (err) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--cor-acaoalerta);">Erro ao carregar dados.</td></tr>`;
-      })
-      .roteadorChamado({ qualFuncao: "obterEquipamentos" });
-  }
-}
-
-// 2. RENDERIZAR TABELA
-function renderizarTabelaEquipamentos(lista) {
-  const tbody = document.getElementById("tabela-equipamentos-body");
-  tbody.innerHTML = "";
-
-  if (!lista || lista.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: var(--text-color-faded);">Nenhum equipamento cadastrado.</td></tr>`;
-    return;
+    if (typeof google !== "undefined" && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function (resposta) {
+          listaEquipamentosGlobal = resposta || [];
+          renderizarTabelaEquipamentos(listaEquipamentosGlobal);
+        })
+        .withFailureHandler(function (err) {
+          if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--cor-acaoalerta);">Erro ao carregar dados.</td></tr>`;
+        })
+        .roteadorChamado({ qualFuncao: "obterEquipamentos" });
+    }
   }
 
-  lista.forEach((item) => {
-    let classeStatus = "ativo";
-    if (item.status === "Em Manutenção") classeStatus = "manutencao";
-    if (item.status === "Inativo") classeStatus = "inativo";
+  window.carregarEquipamentos = carregarEquipamentos;
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><strong>#${item.id}</strong></td>
-      <td>${item.numero}</td>
-      <td>${item.nome}</td>
-      <td>${item.modelo}</td>
-      <td>${item.tipo}</td>
-      <td>${item.local}</td>
-      <td><span class="status-badge ${classeStatus}">${item.status}</span></td>
-      <td>${item.dataAdd}</td>
-      <td>${item.obs || "-"}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
+  function renderizarTabelaEquipamentos(lista) {
+    const tbody = document.getElementById("tabela-equipamentos-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
 
-// 3. BUSCA EM TEMPO REAL NO INPUT (BUSCA LOCAL SEM REQUISITAR O SERVIDOR)
-function filtrarTabelaEquipamentos() {
-  const termo = document.getElementById("inputBuscaEquipamento").value.toLowerCase();
-  const filtrados = listaEquipamentosGlobal.filter((eq) => {
-    return Object.values(eq).some((val) =>
-      String(val).toLowerCase().includes(termo)
-    );
-  });
-  renderizarTabelaEquipamentos(filtrados);
-}
+    if (!lista || lista.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: var(--text-color-faded);">Nenhum equipamento cadastrado.</td></tr>`;
+      return;
+    }
 
-// 4. CONTROLE DOS MODAIS
-function abrirModalCadastroEquipamento() {
-  document.getElementById("modalCadastroEquipamento").style.display = "flex";
-  document.getElementById("modalCadastroEquipamento").classList.add("modal-open");
-}
+    lista.forEach((item) => {
+      let classeStatus = "ativo";
+      if (item.status === "Em Manutenção") classeStatus = "manutencao";
+      if (item.status === "Inativo") classeStatus = "inativo";
 
-function fecharModalCadastroEquipamento() {
-  document.getElementById("formCadastroEquipamento").reset();
-  document.getElementById("modalCadastroEquipamento").style.display = "none";
-  document.getElementById("modalCadastroEquipamento").classList.remove("modal-open");
-}
-
-function abrirModalBuscaEquipamento() {
-  document.getElementById("modalBuscaEquipamento").style.display = "flex";
-  document.getElementById("modalBuscaEquipamento").classList.add("modal-open");
-}
-
-function fecharModalBuscaEquipamento() {
-  document.getElementById("buscaNumEqInput").value = "";
-  document.getElementById("modalBuscaEquipamento").style.display = "none";
-  document.getElementById("modalBuscaEquipamento").classList.remove("modal-open");
-}
-
-function fecharModalEdicaoEquipamento() {
-  document.getElementById("formEdicaoEquipamento").reset();
-  document.getElementById("modalEdicaoEquipamento").style.display = "none";
-  document.getElementById("modalEdicaoEquipamento").classList.remove("modal-open");
-}
-
-// 5. SALVAR NOVO CADASTRO VIA ROTEADOR
-function salvarCadastroEquipamento() {
-  const dadosEnvio = {
-    qualFuncao: "salvarEquipamento",
-    numero: document.getElementById("cadNumEq").value.trim(),
-    nome: document.getElementById("cadNomeEq").value.trim(),
-    modelo: document.getElementById("cadModeloEq").value.trim(),
-    tipo: document.getElementById("cadTipoEq").value.trim(),
-    local: document.getElementById("cadLocalEq").value.trim(),
-    status: document.getElementById("cadStatusEq").value,
-    obs: document.getElementById("cadObsEq").value.trim()
-  };
-
-  if (typeof google !== "undefined" && google.script && google.script.run) {
-    google.script.run
-      .withSuccessHandler(function (resposta) {
-        fecharModalCadastroEquipamento();
-        carregarEquipamentos();
-      })
-      .roteadorChamado(dadosEnvio);
-  }
-}
-
-// 6. BUSCAR PARA EDITAR (PESQUISA NA MEMÓRIA DA APLICAÇÃO)
-function buscarEquipamentoParaEdicao() {
-  const numBusca = document.getElementById("buscaNumEqInput").value.trim();
-
-  if (!numBusca) {
-    alert("Informe o número do equipamento!");
-    return;
-  }
-
-  const eq = listaEquipamentosGlobal.find(
-    (item) => item.numero.toLowerCase() === numBusca.toLowerCase()
-  );
-
-  if (!eq) {
-    alert("Equipamento não encontrado!");
-    return;
-  }
-
-  // Preenche o formulário de edição
-  document.getElementById("editIdEq").value = eq.id;
-  document.getElementById("editNumEq").value = eq.numero;
-  document.getElementById("editNomeEq").value = eq.nome;
-  document.getElementById("editModeloEq").value = eq.modelo;
-  document.getElementById("editTipoEq").value = eq.tipo;
-  document.getElementById("editLocalEq").value = eq.local;
-  document.getElementById("editStatusEq").value = eq.status;
-  document.getElementById("editObsEq").value = eq.obs;
-
-  fecharModalBuscaEquipamento();
-  document.getElementById("modalEdicaoEquipamento").style.display = "flex";
-  document.getElementById("modalEdicaoEquipamento").classList.add("modal-open");
-}
-
-// 7. SALVAR ALTERAÇÃO VIA ROTEADOR
-function salvarEdicaoEquipamento() {
-  const dadosEnvio = {
-    qualFuncao: "atualizarEquipamento",
-    id: parseInt(document.getElementById("editIdEq").value),
-    numero: document.getElementById("editNumEq").value.trim(),
-    nome: document.getElementById("editNomeEq").value.trim(),
-    modelo: document.getElementById("editModeloEq").value.trim(),
-    tipo: document.getElementById("editTipoEq").value.trim(),
-    local: document.getElementById("editLocalEq").value.trim(),
-    status: document.getElementById("editStatusEq").value,
-    obs: document.getElementById("editObsEq").value.trim()
-  };
-
-  if (typeof google !== "undefined" && google.script && google.script.run) {
-    google.script.run
-      .withSuccessHandler(function (resposta) {
-        fecharModalEdicaoEquipamento();
-        carregarEquipamentos();
-      })
-      .roteadorChamado(dadosEnvio);
-  }
-}
-
-// 8. APAGAR EQUIPAMENTO VIA ROTEADOR
-function apagarEquipamento() {
-  const idEquipamento = parseInt(document.getElementById("editIdEq").value);
-  
-  if (!idEquipamento) {
-    console.error("Numero do equipamento invalido ou não encontrado");
-    return;
-  }
-
-  const modalConfirm = document.getElementById("modalConfirmarExclusaoEquipamento")
-  modalConfirm.style.display = "flex";
-  modalConfirm.classList.add("modal-open");
-}
-
-//fecha modal de confirmação de exclusão
-function fecharModalConfirmacaoExclusao(){
-  const modalConfirm = document.getElementById("modalConfirmarExclusaoEquipamento");
-  modalConfirm.style.display = "none";
-  modalConfirm.classList.remove("modal-open");
-}
-
-
-function confirmarExclusaoEquipamento(){
-  
-  const idEquipamento = parseInt(document.getElementById("editIdEq").value);
-
-  if(typeof google !== "undefined" && google.script && google.script.run){
-    google.script.run
-      .withSuccessHandler(function (resposta){
-
-        fecharModalConfirmacaoExclusao();
-        fecharModalEdicaoEquipamento();
-        carregarEquipamentos();
-      
-      })
-      .withFailureHandler(function (err){
-        alert("Erro ao excluir equipamento:" + err);
-        fecharModalConfirmacaoExclusao();
-        
-      })
-      .roteadorChamado({
-        qualFuncao: "deletarEquipamento",
-        id: idEquipamento
-      });
-  }
-}
-
-// Array que mantém a lista de itens temporários no celular do usuário
-let listaItensNfeTemp = [];
-
-// 1. ADICIONAR ITEM À LISTA TEMPORÁRIA
-function adicionarItemNaListaNfe() {
-  const inputCodigo = document.getElementById("nfeCodigoBarras");
-  const inputQtd = document.getElementById("nfeQuantidade");
-
-  const codigo = inputCodigo.value.trim();
-  const quantidade = parseInt(inputQtd.value);
-
-  if (!codigo) {
-    alert("Por favor, digite o código de barras.");
-    inputCodigo.focus();
-    return;
-  }
-
-  if (isNaN(quantidade) || quantidade <= 0) {
-    alert("Informe uma quantidade válida maior que zero.");
-    inputQtd.focus();
-    return;
-  }
-
-  // Se o código já existir na lista, apenas soma a quantidade
-  const indexExistente = listaItensNfeTemp.findIndex(item => item.codigo === codigo);
-
-  if (indexExistente !== -1) {
-    listaItensNfeTemp[indexExistente].quantidade += quantidade;
-  } else {
-    listaItensNfeTemp.push({
-      codigo: codigo,
-      quantidade: quantidade
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>#${item.id}</strong></td>
+        <td>${item.numero}</td>
+        <td>${item.nome}</td>
+        <td>${item.modelo}</td>
+        <td>${item.tipo}</td>
+        <td>${item.local}</td>
+        <td><span class="status-badge ${classeStatus}">${item.status}</span></td>
+        <td>${item.dataAdd}</td>
+        <td>${item.obs || "-"}</td>
+      `;
+      tbody.appendChild(tr);
     });
   }
 
-  // Reseta campos e devolve o foco para o código de barras
-  inputCodigo.value = "";
-  inputQtd.value = "1";
-  inputCodigo.focus();
+  window.renderizarTabelaEquipamentos = renderizarTabelaEquipamentos;
 
-  renderizarTabelaNfeTemp();
-}
-
-// Permitir adicionar apertando "Enter" no teclado do celular
-function tratarTeclaEnterNfe(event) {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    adicionarItemNaListaNfe();
+  function filtrarTabelaEquipamentos() {
+    const termo = document.getElementById("inputBuscaEquipamento").value.toLowerCase();
+    const filtrados = listaEquipamentosGlobal.filter((eq) => {
+      return Object.values(eq).some((val) =>
+        String(val).toLowerCase().includes(termo)
+      );
+    });
+    renderizarTabelaEquipamentos(filtrados);
   }
-}
 
-// 2. RENDERIZAR TABELA NA TELA
-function renderizarTabelaNfeTemp() {
-  const tbody = document.getElementById("tabela-nfe-body");
-  const totalSpan = document.getElementById("totalItensNfe");
-  
-  tbody.innerHTML = "";
-  totalSpan.textContent = listaItensNfeTemp.length;
+  window.filtrarTabelaEquipamentos = filtrarTabelaEquipamentos;
 
-  if (listaItensNfeTemp.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-color-faded);">
-          Nenhum item adicionado à lista.
+  function abrirModalCadastroEquipamento() {
+    const m = document.getElementById("modalCadastroEquipamento");
+    if (m) { m.style.display = "flex"; m.classList.add("modal-open"); }
+  }
+
+  window.abrirModalCadastroEquipamento = abrirModalCadastroEquipamento;
+
+  function fecharModalCadastroEquipamento() {
+    const f = document.getElementById("formCadastroEquipamento");
+    if (f) f.reset();
+    const m = document.getElementById("modalCadastroEquipamento");
+    if (m) { m.style.display = "none"; m.classList.remove("modal-open"); }
+  }
+
+  window.fecharModalCadastroEquipamento = fecharModalCadastroEquipamento;
+
+  function abrirModalBuscaEquipamento() {
+    const m = document.getElementById("modalBuscaEquipamento");
+    if (m) { m.style.display = "flex"; m.classList.add("modal-open"); }
+  }
+
+  window.abrirModalBuscaEquipamento = abrirModalBuscaEquipamento;
+
+  function fecharModalBuscaEquipamento() {
+    if (document.getElementById("buscaNumEqInput")) document.getElementById("buscaNumEqInput").value = "";
+    const m = document.getElementById("modalBuscaEquipamento");
+    if (m) { m.style.display = "none"; m.classList.remove("modal-open"); }
+  }
+
+  window.fecharModalBuscaEquipamento = fecharModalBuscaEquipamento;
+
+  function fecharModalEdicaoEquipamento() {
+    const f = document.getElementById("formEdicaoEquipamento");
+    if (f) f.reset();
+    const m = document.getElementById("modalEdicaoEquipamento");
+    if (m) { m.style.display = "none"; m.classList.remove("modal-open"); }
+  }
+
+  window.fecharModalEdicaoEquipamento = fecharModalEdicaoEquipamento;
+
+  function salvarCadastroEquipamento() {
+    const num = document.getElementById("cadNumEq").value.trim();
+    const nome = document.getElementById("cadNomeEq").value.trim();
+    const modelo = document.getElementById("cadModeloEq").value.trim();
+    const tipo = document.getElementById("cadTipoEq").value.trim();
+    const local = document.getElementById("cadLocalEq").value.trim();
+    const status = document.getElementById("cadStatusEq").value;
+    const obs = document.getElementById("cadObsEq").value.trim();
+    const dataHojeStr = new Date().toLocaleDateString('pt-BR');
+
+    if (!num || !nome) {
+      alert("Por favor, preencha os campos obrigatórios Número e Nome.");
+      return;
+    }
+
+    const novoEquipamentoTemp = {
+      id: "...",
+      numero: num,
+      nome: nome,
+      modelo: modelo,
+      tipo: tipo,
+      local: local,
+      status: status,
+      dataAdd: dataHojeStr,
+      obs: obs
+    };
+
+    listaEquipamentosGlobal.unshift(novoEquipamentoTemp);
+    renderizarTabelaEquipamentos(listaEquipamentosGlobal);
+    fecharModalCadastroEquipamento();
+
+    const dadosEnvio = {
+      qualFuncao: "salvarEquipamento",
+      numero: num,
+      nome: nome,
+      modelo: modelo,
+      tipo: tipo,
+      local: local,
+      status: status,
+      obs: obs
+    };
+
+    if (typeof google !== "undefined" && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function (resposta) {
+          if (resposta && resposta.id) {
+            novoEquipamentoTemp.id = resposta.id;
+            if (resposta.dataAdd) novoEquipamentoTemp.dataAdd = resposta.dataAdd;
+            renderizarTabelaEquipamentos(listaEquipamentosGlobal);
+          }
+        })
+        .roteadorChamado(dadosEnvio);
+    }
+  }
+
+  window.salvarCadastroEquipamento = salvarCadastroEquipamento;
+
+  function buscarEquipamentoParaEdicao() {
+    const numBusca = document.getElementById("buscaNumEqInput").value.trim();
+
+    if (!numBusca) {
+      alert("Informe o número do equipamento!");
+      return;
+    }
+
+    const eq = listaEquipamentosGlobal.find(
+      (item) => item.numero.toLowerCase() === numBusca.toLowerCase()
+    );
+
+    if (!eq) {
+      alert("Equipamento não encontrado!");
+      return;
+    }
+
+    document.getElementById("editIdEq").value = eq.id;
+    document.getElementById("editNumEq").value = eq.numero;
+    document.getElementById("editNomeEq").value = eq.nome;
+    document.getElementById("editModeloEq").value = eq.modelo;
+    document.getElementById("editTipoEq").value = eq.tipo;
+    document.getElementById("editLocalEq").value = eq.local;
+    document.getElementById("editStatusEq").value = eq.status;
+    document.getElementById("editObsEq").value = eq.obs;
+
+    fecharModalBuscaEquipamento();
+    const m = document.getElementById("modalEdicaoEquipamento");
+    if (m) { m.style.display = "flex"; m.classList.add("modal-open"); }
+  }
+
+  window.buscarEquipamentoParaEdicao = buscarEquipamentoParaEdicao;
+
+  function salvarEdicaoEquipamento() {
+    const idEq = parseInt(document.getElementById("editIdEq").value);
+    const num = document.getElementById("editNumEq").value.trim();
+    const nome = document.getElementById("editNomeEq").value.trim();
+    const modelo = document.getElementById("editModeloEq").value.trim();
+    const tipo = document.getElementById("editTipoEq").value.trim();
+    const local = document.getElementById("editLocalEq").value.trim();
+    const status = document.getElementById("editStatusEq").value;
+    const obs = document.getElementById("editObsEq").value.trim();
+
+    const idx = listaEquipamentosGlobal.findIndex(e => Number(e.id) === Number(idEq));
+    if (idx !== -1) {
+      listaEquipamentosGlobal[idx].numero = num;
+      listaEquipamentosGlobal[idx].nome = nome;
+      listaEquipamentosGlobal[idx].modelo = modelo;
+      listaEquipamentosGlobal[idx].tipo = tipo;
+      listaEquipamentosGlobal[idx].local = local;
+      listaEquipamentosGlobal[idx].status = status;
+      listaEquipamentosGlobal[idx].obs = obs;
+    }
+
+    renderizarTabelaEquipamentos(listaEquipamentosGlobal);
+    fecharModalEdicaoEquipamento();
+
+    const dadosEnvio = {
+      qualFuncao: "atualizarEquipamento",
+      id: idEq,
+      numero: num,
+      nome: nome,
+      modelo: modelo,
+      tipo: tipo,
+      local: local,
+      status: status,
+      obs: obs
+    };
+
+    if (typeof google !== "undefined" && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function (resposta) {})
+        .roteadorChamado(dadosEnvio);
+    }
+  }
+
+  window.salvarEdicaoEquipamento = salvarEdicaoEquipamento;
+
+  function apagarEquipamento() {
+    const idEquipamento = parseInt(document.getElementById("editIdEq").value);
+    
+    if (!idEquipamento) {
+      console.error("Numero do equipamento invalido ou não encontrado");
+      return;
+    }
+
+    const modalConfirm = document.getElementById("modalConfirmarExclusaoEquipamento");
+    if (modalConfirm) { modalConfirm.style.display = "flex"; modalConfirm.classList.add("modal-open"); }
+  }
+
+  window.apagarEquipamento = apagarEquipamento;
+
+  function fecharModalConfirmacaoExclusao(){
+    const modalConfirm = document.getElementById("modalConfirmarExclusaoEquipamento");
+    if (modalConfirm) { modalConfirm.style.display = "none"; modalConfirm.classList.remove("modal-open"); }
+  }
+
+  window.fecharModalConfirmacaoExclusao = fecharModalConfirmacaoExclusao;
+
+  function confirmarExclusaoEquipamento(){
+    const idEquipamento = parseInt(document.getElementById("editIdEq").value);
+
+    listaEquipamentosGlobal = listaEquipamentosGlobal.filter(e => Number(e.id) !== Number(idEquipamento));
+    renderizarTabelaEquipamentos(listaEquipamentosGlobal);
+
+    fecharModalConfirmacaoExclusao();
+    fecharModalEdicaoEquipamento();
+
+    if(typeof google !== "undefined" && google.script && google.script.run){
+      google.script.run
+        .withSuccessHandler(function (resposta){})
+        .withFailureHandler(function (err){
+          alert("Erro ao excluir equipamento no servidor: " + err);
+        })
+        .roteadorChamado({
+          qualFuncao: "deletarEquipamento",
+          id: idEquipamento
+        });
+    }
+  }
+
+  window.confirmarExclusaoEquipamento = confirmarExclusaoEquipamento;
+
+  /** MÓDULO COLETA DE NFE */
+
+  let listaItensNfeTemp = [];
+
+  function adicionarItemNaListaNfe() {
+    const inputCodigo = document.getElementById("nfeCodigoBarras");
+    const inputQtd = document.getElementById("nfeQuantidade");
+
+    const codigo = inputCodigo.value.trim();
+    const quantidade = parseInt(inputQtd.value);
+
+    if (!codigo) {
+      alert("Por favor, digite o código de barras.");
+      inputCodigo.focus();
+      return;
+    }
+
+    if (isNaN(quantidade) || quantidade <= 0) {
+      alert("Informe uma quantidade válida maior que zero.");
+      inputQtd.focus();
+      return;
+    }
+
+    const indexExistente = listaItensNfeTemp.findIndex(item => item.codigo === codigo);
+
+    if (indexExistente !== -1) {
+      listaItensNfeTemp[indexExistente].quantidade += quantidade;
+    } else {
+      listaItensNfeTemp.push({
+        codigo: codigo,
+        quantidade: quantidade
+      });
+    }
+
+    inputCodigo.value = "";
+    inputQtd.value = "1";
+    inputCodigo.focus();
+
+    renderizarTabelaNfeTemp();
+  }
+
+  window.adicionarItemNaListaNfe = adicionarItemNaListaNfe;
+
+  function tratarTeclaEnterNfe(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      adicionarItemNaListaNfe();
+    }
+  }
+
+  window.tratarTeclaEnterNfe = tratarTeclaEnterNfe;
+
+  function renderizarTabelaNfeTemp() {
+    const tbody = document.getElementById("tabela-nfe-body");
+    const totalSpan = document.getElementById("totalItensNfe");
+    
+    if (!tbody || !totalSpan) return;
+    tbody.innerHTML = "";
+    totalSpan.textContent = listaItensNfeTemp.length;
+
+    if (listaItensNfeTemp.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-color-faded);">
+            Nenhum item adicionado à lista.
+          </td>
+        </tr>`;
+      return;
+    }
+
+    listaItensNfeTemp.forEach((item, index) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>#${index + 1}</strong></td>
+        <td style="font-family: monospace; font-size: 14px; color: var(--text-color-light);">${item.codigo}</td>
+        <td>
+          <input type="number" min="1" value="${item.quantidade}" 
+                 onchange="alterarQtdNfeTemp(${index}, this.value)" 
+                 style="width: 70px; height: 30px; background-color: var(--cor-fundoprincipal); border: 1px solid var(--cor-linhas); color: white; border-radius: 6px; text-align: center;" />
         </td>
-      </tr>`;
-    return;
+        <td style="text-align: center;">
+          <button type="button" class="btn-table-delete" onclick="removerItemNfeTemp(${index})" title="Remover item">
+            <i class="bi bi-trash-fill"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
   }
 
-  listaItensNfeTemp.forEach((item, index) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><strong>#${index + 1}</strong></td>
-      <td style="font-family: monospace; font-size: 14px; color: var(--text-color-light);">${item.codigo}</td>
-      <td>
-        <input type="number" min="1" value="${item.quantidade}" 
-               onchange="alterarQtdNfeTemp(${index}, this.value)" 
-               style="width: 70px; height: 30px; background-color: var(--cor-fundoprincipal); border: 1px solid var(--cor-linhas); color: white; border-radius: 6px; text-align: center;" />
-      </td>
-      <td style="text-align: center;">
-        <button type="button" class="btn-table-delete" onclick="removerItemNfeTemp(${index})" title="Remover item">
-          <i class="bi bi-trash-fill"></i>
-        </button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
+  window.renderizarTabelaNfeTemp = renderizarTabelaNfeTemp;
 
-// 3. ALTERAR QUANTIDADE DIRETO NA TABELA
-function alterarQtdNfeTemp(index, novaQtd) {
-  const qtd = parseInt(novaQtd);
-  if (!isNaN(qtd) && qtd > 0) {
-    listaItensNfeTemp[index].quantidade = qtd;
-  } else {
+  function alterarQtdNfeTemp(index, novaQtd) {
+    const qtd = parseInt(novaQtd);
+    if (!isNaN(qtd) && qtd > 0) {
+      listaItensNfeTemp[index].quantidade = qtd;
+    } else {
+      renderizarTabelaNfeTemp();
+    }
+  }
+
+  window.alterarQtdNfeTemp = alterarQtdNfeTemp;
+
+  function removerItemNfeTemp(index) {
+    listaItensNfeTemp.splice(index, 1);
     renderizarTabelaNfeTemp();
   }
-}
 
-// 4. REMOVER ITEM
-function removerItemNfeTemp(index) {
-  listaItensNfeTemp.splice(index, 1);
-  renderizarTabelaNfeTemp();
-}
+  window.removerItemNfeTemp = removerItemNfeTemp;
 
-// 5. LIMPAR TODA A LISTA
-function limparTodaListaNfe() {
-  if (listaItensNfeTemp.length === 0) return;
-  if (confirm("Deseja realmente limpar todos os itens da lista?")) {
-    listaItensNfeTemp = [];
-    renderizarTabelaNfeTemp();
-  }
-}
-
-// 6. MODAL DE SUCESSO E CONFIRMAÇÃO DE ENVIO
-function abrirModalSucessoNfe(mensagem) {
-  if (mensagem) {
-    document.getElementById("msgSucessoNfeTexto").textContent = mensagem;
-  }
-  const modal = document.getElementById("modalSucessoNfe");
-  modal.style.display = "flex";
-  modal.classList.add("modal-open");
-}
-
-function fecharModalSucessoNfe() {
-  const modal = document.getElementById("modalSucessoNfe");
-  modal.style.display = "none";
-  modal.classList.remove("modal-open");
-}
-
-function solicitarConfirmacaoEnvioNfe() {
-  if (listaItensNfeTemp.length === 0) {
-    alert("Adicione pelo menos um item à lista antes de enviar.");
-    return;
+  function limparTodaListaNfe() {
+    if (listaItensNfeTemp.length === 0) return;
+    if (confirm("Deseja realmente limpar todos os itens da lista?")) {
+      listaItensNfeTemp = [];
+      renderizarTabelaNfeTemp();
+    }
   }
 
-  document.getElementById("confirmTotalItens").textContent = listaItensNfeTemp.length;
-  const modalConfirm = document.getElementById("modalConfirmarEnvioNfe");
-  modalConfirm.style.display = "flex";
-  modalConfirm.classList.add("modal-open");
-}
+  window.limparTodaListaNfe = limparTodaListaNfe;
 
-function fecharModalConfirmarEnvioNfe() {
-  const modalConfirm = document.getElementById("modalConfirmarEnvioNfe");
-  modalConfirm.style.display = "none";
-  modalConfirm.classList.remove("modal-open");
-}
-
-// 7. ENVIO FINAL PARA O GOOGLE APPS SCRIPT
-function enviarPedidoNfeFinal() {
-  let usuarioLogado = "";
-
-  if (typeof nomeUsuarioLogado !== "undefined" && nomeUsuarioLogado) {
-    usuarioLogado = nomeUsuarioLogado;
-  } else if (document.getElementById("ncUsuarioLogado") && document.getElementById("ncUsuarioLogado").value) {
-    usuarioLogado = document.getElementById("ncUsuarioLogado").value;
-  } else if (document.getElementById("solicitante") && document.getElementById("solicitante").value) {
-    usuarioLogado = document.getElementById("solicitante").value;
+  function abrirModalSucessoNfe(mensagem) {
+    if (mensagem) {
+      const txt = document.getElementById("msgSucessoNfeTexto");
+      if (txt) txt.textContent = mensagem;
+    }
+    const modal = document.getElementById("modalSucessoNfe");
+    if (modal) { modal.style.display = "flex"; modal.classList.add("modal-open"); }
   }
 
-  const dadosEnvio = {
-    qualFuncao: "processarPedidoNfe",
-    solicitante: usuarioLogado || "Usuário do Portal",
-    itens: listaItensNfeTemp
-  };
+  window.abrirModalSucessoNfe = abrirModalSucessoNfe;
 
-  if (typeof google !== "undefined" && google.script && google.script.run) {
-    if (typeof fecharModalConfirmarEnvioNfe === "function") fecharModalConfirmarEnvioNfe();
-
-    google.script.run
-      .withSuccessHandler(function (resposta) {
-        if (resposta && resposta.status === "sucesso") {
-          listaItensNfeTemp = [];
-          renderizarTabelaNfeTemp();
-          abrirModalSucessoNfe(resposta.mensagem);
-        } else {
-          abrirModalSucessoNfe("Aviso: " + (resposta.mensagem || "Erro ao processar envio."));
-        }
-      })
-      .withFailureHandler(function (err) {
-        abrirModalSucessoNfe("Erro de comunicação com o servidor: " + err);
-      })
-      .roteadorChamado(dadosEnvio);
+  function fecharModalSucessoNfe() {
+    const modal = document.getElementById("modalSucessoNfe");
+    if (modal) { modal.style.display = "none"; modal.classList.remove("modal-open"); }
   }
-}
+
+  window.fecharModalSucessoNfe = fecharModalSucessoNfe;
+
+  function solicitarConfirmacaoEnvioNfe() {
+    if (listaItensNfeTemp.length === 0) {
+      alert("Adicione pelo menos um item à lista antes de enviar.");
+      return;
+    }
+
+    if (document.getElementById("confirmTotalItens")) document.getElementById("confirmTotalItens").textContent = listaItensNfeTemp.length;
+    const modalConfirm = document.getElementById("modalConfirmarEnvioNfe");
+    if (modalConfirm) { modalConfirm.style.display = "flex"; modalConfirm.classList.add("modal-open"); }
+  }
+
+  window.solicitarConfirmacaoEnvioNfe = solicitarConfirmacaoEnvioNfe;
+
+  function fecharModalConfirmarEnvioNfe() {
+    const modalConfirm = document.getElementById("modalConfirmarEnvioNfe");
+    if (modalConfirm) { modalConfirm.style.display = "none"; modalConfirm.classList.remove("modal-open"); }
+  }
+
+  window.fecharModalConfirmarEnvioNfe = fecharModalConfirmarEnvioNfe;
+
+  function enviarPedidoNfeFinal() {
+    let usuarioLogado = "";
+
+    if (typeof nomeUsuarioLogado !== "undefined" && nomeUsuarioLogado) {
+      usuarioLogado = nomeUsuarioLogado;
+    } else if (document.getElementById("ncUsuarioLogado") && document.getElementById("ncUsuarioLogado").value) {
+      usuarioLogado = document.getElementById("ncUsuarioLogado").value;
+    } else if (document.getElementById("solicitante") && document.getElementById("solicitante").value) {
+      usuarioLogado = document.getElementById("solicitante").value;
+    }
+
+    const dadosEnvio = {
+      qualFuncao: "processarPedidoNfe",
+      solicitante: usuarioLogado || "Usuário do Portal",
+      itens: listaItensNfeTemp
+    };
+
+    if (typeof google !== "undefined" && google.script && google.script.run) {
+      if (typeof fecharModalConfirmarEnvioNfe === "function") fecharModalConfirmarEnvioNfe();
+
+      google.script.run
+        .withSuccessHandler(function (resposta) {
+          if (resposta && resposta.status === "sucesso") {
+            listaItensNfeTemp = [];
+            renderizarTabelaNfeTemp();
+            abrirModalSucessoNfe(resposta.mensagem);
+          } else {
+            abrirModalSucessoNfe("Aviso: " + (resposta.mensagem || "Erro ao processar envio."));
+          }
+        })
+        .withFailureHandler(function (err) {
+          abrirModalSucessoNfe("Erro de comunicação com o servidor: " + err);
+        })
+        .roteadorChamado(dadosEnvio);
+    }
+  }
+
+  window.enviarPedidoNfeFinal = enviarPedidoNfeFinal;
 
 </script>
