@@ -9,11 +9,18 @@ function getAppSpreadsheet() {
 
 /** CONFIGURAÇÕES INICIAIS DA PÁGINA */
 function doGet(e) {
+  var tentativas = ['Login', 'login', 'Login.html', 'login.html'];
   var html;
-  try {
-    html = HtmlService.createTemplateFromFile('Login');
-  } catch (err) {
-    html = HtmlService.createTemplateFromFile('login');
+  
+  for (var i = 0; i < tentativas.length; i++) {
+    try {
+      html = HtmlService.createTemplateFromFile(tentativas[i]);
+      if (html) break;
+    } catch (err) {}
+  }
+  
+  if (!html) {
+    throw new Error("Não foi possível carregar a página de Login.");
   }
   
   return html.evaluate()
@@ -22,24 +29,43 @@ function doGet(e) {
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
-/** FUNÇÃO PARA PERMITIR IMPORTAÇÃO DE CSS/JS COM TRATAMENTO DE CASE-SENSITIVITY DO GOOGLE APPS SCRIPT */
+/** FUNÇÃO PARA PERMITIR IMPORTAÇÃO DE CSS/JS COM TRATAMENTO DE CASE-SENSITIVITY E EXTENSÕES NO GOOGLE APPS SCRIPT */
 function include(filename) {
   if (!filename) return "";
   
+  var base = String(filename).trim();
+  var baseSemExt = base.replace(/\.html$/i, "");
+  
   var tentativas = [
-    filename,
-    filename.toLowerCase(),
-    filename.toUpperCase(),
-    filename.charAt(0).toUpperCase() + filename.slice(1),
-    filename.charAt(0).toLowerCase() + filename.slice(1),
+    base,
+    baseSemExt,
+    baseSemExt + ".html",
+    baseSemExt.toLowerCase(),
+    baseSemExt.toLowerCase() + ".html",
+    baseSemExt.toUpperCase(),
+    baseSemExt.toUpperCase() + ".html",
+    baseSemExt.charAt(0).toUpperCase() + baseSemExt.slice(1),
+    (baseSemExt.charAt(0).toUpperCase() + baseSemExt.slice(1)) + ".html",
+    baseSemExt.charAt(0).toLowerCase() + baseSemExt.slice(1),
+    (baseSemExt.charAt(0).toLowerCase() + baseSemExt.slice(1)) + ".html",
     "javaScript",
+    "javaScript.html",
     "JavaScript",
+    "JavaScript.html",
+    "javascript",
+    "javascript.html",
     "style",
+    "style.html",
     "Style",
+    "Style.html",
     "Login",
+    "Login.html",
     "login",
+    "login.html",
     "Sistema",
-    "sistema"
+    "Sistema.html",
+    "sistema",
+    "sistema.html"
   ];
   
   for (var i = 0; i < tentativas.length; i++) {
@@ -170,11 +196,16 @@ function autenticarUsuario(matricula, senha) {
 }
 
 function carregarPaginaSistema() {
-  try {
-    return HtmlService.createHtmlOutputFromFile('Sistema').getContent();
-  } catch (e) {
-    return HtmlService.createHtmlOutputFromFile('sistema').getContent();
+  var tentativas = ['Sistema', 'sistema', 'Sistema.html', 'sistema.html'];
+  for (var i = 0; i < tentativas.length; i++) {
+    try {
+      return HtmlService.createTemplateFromFile(tentativas[i]).evaluate().getContent();
+    } catch (e1) {}
+    try {
+      return HtmlService.createHtmlOutputFromFile(tentativas[i]).getContent();
+    } catch (e2) {}
   }
+  throw new Error("Não foi possível carregar o arquivo do Sistema.");
 }
 
 /** AREA DE CHAMADOS / CADASTRA /ALTERA / REQUISIÇÃO / ATUALIZAÇÃO */

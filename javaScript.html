@@ -1,41 +1,59 @@
 <script>
   /** Variáveis globais para gerenciar o estado da sessão do usuário logado */ 
-  let nomeUsuarioLogado = "";
-  let funcaoUsuarioLogado = "";
-  let nivelUsuarioLogado = "";
+  var nomeUsuarioLogado = window.nomeUsuarioLogado || "";
+  var funcaoUsuarioLogado = window.funcaoUsuarioLogado || "";
+  var nivelUsuarioLogado = window.nivelUsuarioLogado || "";
 
   /** CACHE GLOBAL EM MEMÓRIA DE TODAS AS ENTIDADES DO SISTEMA (OPTIMISTIC UI) */
-  let listaChamadosGlobal = [];
-  let listaUsuariosGlobal = [];
-  let listaTarefasGlobal = [];
-  let listaEquipamentosGlobal = [];
+  var listaChamadosGlobal = window.listaChamadosGlobal || [];
+  var listaUsuariosGlobal = window.listaUsuariosGlobal || [];
+  var listaTarefasGlobal = window.listaTarefasGlobal || [];
+  var listaEquipamentosGlobal = window.listaEquipamentosGlobal || [];
+
+  var autenticandoEmAndamento = false;
 
   /** FUNÇÃO DE AUTENTICAÇÃO E LOGIN */
 
   function entrar() {
+    if (autenticandoEmAndamento) return;
+
     var elemMat = document.getElementById("matricula");
     var elemSen = document.getElementById("senha");
     var msg = document.getElementById("mensagem");
 
-    var mat = elemMat ? elemMat.value : "";
-    var sen = elemSen ? elemSen.value : "";
+    var mat = elemMat ? elemMat.value.trim() : "";
+    var sen = elemSen ? elemSen.value.trim() : "";
 
     if (!mat || !sen) {
-      if (msg) msg.innerText = "Preencha todos os campos.";
+      if (msg) {
+        msg.style.color = "#ef4444";
+        msg.innerText = "Preencha todos os campos.";
+      }
       return;
     }
 
-    if (msg) msg.innerText = "Autenticando...";
+    autenticandoEmAndamento = true;
+    if (msg) {
+      msg.style.color = "#3b82f6";
+      msg.innerText = "Autenticando...";
+    }
 
     if (typeof google === "undefined" || !google.script || !google.script.run) {
-      if (msg) msg.innerText = "Erro: Conexão com o Google Apps Script não disponível.";
+      autenticandoEmAndamento = false;
+      if (msg) {
+        msg.style.color = "#ef4444";
+        msg.innerText = "Erro: Conexão com o Google Apps Script não disponível.";
+      }
       return;
     }
 
     google.script.run
       .withSuccessHandler(function(respostaPerfil) {
         if (respostaPerfil && respostaPerfil.nivel) {
-          if (msg) msg.innerText = "Login aprovado! Carregando sistema...";
+          if (msg) {
+            msg.style.color = "#10b981";
+            msg.innerText = "Login aprovado! Carregando sistema...";
+          }
           
           nivelUsuarioLogado = String(respostaPerfil.nivel).toLowerCase().trim();
           nomeUsuarioLogado = respostaPerfil.nomeCompleto || "Usuário";
@@ -43,6 +61,7 @@
           
           google.script.run
             .withSuccessHandler(function(htmlSistema) {
+              autenticandoEmAndamento = false;
               if (htmlSistema) {
                 document.body.innerHTML = htmlSistema;
               }
@@ -70,16 +89,28 @@
               }, 150);
             })
             .withFailureHandler(function(erroHtml) {
-              if (msg) msg.innerText = "Erro ao carregar tela do sistema: " + (erroHtml ? erroHtml.message : "Erro desconhecido");
+              autenticandoEmAndamento = false;
+              if (msg) {
+                msg.style.color = "#ef4444";
+                msg.innerText = "Erro ao carregar tela do sistema: " + (erroHtml ? erroHtml.message : "Erro desconhecido");
+              }
             })
             .carregarPaginaSistema();
             
         } else {
-          if (msg) msg.innerText = "Usuário ou senha inválidos.";
+          autenticandoEmAndamento = false;
+          if (msg) {
+            msg.style.color = "#ef4444";
+            msg.innerText = "Usuário ou senha inválidos.";
+          }
         }
       })
       .withFailureHandler(function(erro) {
-        if (msg) msg.innerText = "Erro no servidor: " + (erro ? erro.message : "Resposta indefinida");
+        autenticandoEmAndamento = false;
+        if (msg) {
+          msg.style.color = "#ef4444";
+          msg.innerText = "Erro no servidor: " + (erro ? erro.message : "Resposta indefinida");
+        }
       })
       .roteadorChamado({
         qualFuncao: "autenticarUsuario", 
@@ -89,14 +120,32 @@
   }
 
   window.entrar = entrar;
+  if (typeof globalThis !== "undefined") {
+    globalThis.entrar = entrar;
+  }
 
+  function inicializarEventosLogin() {
+    var btnLogin = document.querySelector(".btn-login");
+    if (btnLogin) {
+      btnLogin.onclick = entrar;
+    }
+    var formLogin = document.getElementById("area-login");
+    if (formLogin) {
+      formLogin.onsubmit = function(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        entrar();
+        return false;
+      };
+    }
+  }
+
+  inicializarEventosLogin();
   if (typeof document !== "undefined") {
-    document.addEventListener("DOMContentLoaded", function() {
-      var btnLogin = document.querySelector(".btn-login");
-      if (btnLogin) {
-        btnLogin.onclick = entrar;
-      }
-    });
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+      inicializarEventosLogin();
+    } else {
+      document.addEventListener("DOMContentLoaded", inicializarEventosLogin);
+    }
   }
 
   /** NAVEGAÇÃO ENTRE MENUS */ 

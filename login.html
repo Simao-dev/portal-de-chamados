@@ -31,16 +31,16 @@
 
         <div class="form-group">
           <i class="fas fa-user input-icon"></i>
-          <input id="matricula" type="text" name="matricula" class="form-control" placeholder="Usuário" required>
+          <input id="matricula" type="text" name="matricula" class="form-control" placeholder="Usuário" required onkeypress="if(event.key === 'Enter') entrar();">
         </div>
 
         <div class="form-group">
           <i class="fas fa-lock input-icon"></i>
-          <input id="senha" type="password" name="senha" class="form-control" placeholder="Senha" required>
+          <input id="senha" type="password" name="senha" class="form-control" placeholder="Senha" required onkeypress="if(event.key === 'Enter') entrar();">
         </div>
 
         <button type="button" onclick="entrar()" class="btn-login">Entrar</button>
-        <p style="color: var(--cor-fundoprincipal);" id="mensagem"></p>
+        <p style="color: #ef4444; font-size: 0.9rem; margin-top: 15px; font-weight: 600; text-align: center; min-height: 20px;" id="mensagem"></p>
 
       </div>
     </div>
